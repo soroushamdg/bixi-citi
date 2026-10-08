@@ -25,13 +25,16 @@ export interface UIState {
   mtlNorth: boolean;
   /** where a live minute lives when the mode is Live (Montréal wall clock) */
   liveMinute: number;
+  /** Montréal weekday (0 = Monday) and date (YYYY-MM-DD); empty until the browser sets the clock */
+  liveDay: number;
+  liveDate: string;
   sceneStatus: "loading" | "ready" | "failed";
   loadProgress: number;
   loadText: string;
 }
 
 export const ui = createStore<UIState>(() => ({
-  mode: "flows",
+  mode: "live",
   minute: 495,
   day: 3,
   playing: false,
@@ -40,6 +43,8 @@ export const ui = createStore<UIState>(() => ({
   hover: null,
   mtlNorth: true,
   liveMinute: 0,
+  liveDay: 0,
+  liveDate: "",
   sceneStatus: "loading",
   loadProgress: 0,
   loadText: "Raising Montréal",

@@ -122,7 +122,7 @@ export function Basin() {
         <p>{caption.body}</p>
         {caption.cta && (
           <button className="cta" onClick={play}>
-            <svg viewBox="0 0 24 24" fill="#f3dcb0"><path d="M8 5.5v13l11-6.5z" /></svg>Play the day
+            <svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z" /></svg>Play the day
           </button>
         )}
       </div>

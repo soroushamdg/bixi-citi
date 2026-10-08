@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ui, useData, useUI } from "@/lib/store";
 import { getScene } from "@/lib/story-controller";
 import { MTLN } from "@/lib/chapters";
+import { BixiLogo } from "./BixiLogo";
 
 const fmt = new Intl.NumberFormat("en-CA");
 
@@ -42,16 +43,20 @@ export function Header({ stationsHint, tripsHint, dateHint }: { stationsHint: nu
   return (
     <header className="head">
       <div className="mark">
-        <div className="mark-disc" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="6" cy="16" r="3.6" stroke="#a6aebd" />
-            <circle cx="18" cy="16" r="3.6" stroke="#a6aebd" />
-            <path d="M6 16l4.2-7.5h5.6L18 16M10.2 8.5L12.8 16h1.2M14.6 6.2h2.6" stroke="#f3dcb0" />
-          </svg>
-        </div>
         <div>
           <h1 className="wordmark">
-            BIXI <span>STORY</span>
+            <span
+              className="glass"
+              onPointerMove={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                e.currentTarget.style.setProperty("--mx", `${((e.clientX - r.left) / r.width) * 100}%`);
+                e.currentTarget.style.setProperty("--my", `${((e.clientY - r.top) / r.height) * 100}%`);
+              }}
+            >
+              <BixiLogo className="glass-logo" title="BIXI" />
+              <i className="glass-sheen" aria-hidden="true" />
+            </span>
+            <span>STORY</span>
           </h1>
           <p className="tagline">
             Montréal, ride by ride. {fmt.format(n)} stations live, {fmt.format(tripsHint)} real rides on {dateHint}.

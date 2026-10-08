@@ -4,25 +4,23 @@ import { useData, useUI, type Mode } from "@/lib/store";
 import { enterChapter, play, scrubTo, setMode, setPlaying, stepChapter, useStory } from "@/lib/story-controller";
 import { DAYS } from "@/lib/story";
 import { compass, montrealMs, sunPos, sunTimes } from "@/lib/sun";
-import { montrealNow } from "@/lib/load";
 
 const MODES: Array<[Mode, string]> = [["live", "Live"], ["flows", "Flows"], ["rhythm", "Rhythm"], ["stations", "Stations"]];
 const pad = (n: number) => String(n).padStart(2, "0");
 const hhmm = (m: number) => `${pad(Math.floor(m / 60) % 24)}:${pad(Math.floor(m) % 60)}`;
 
-function useSunText(mode: Mode, minute: number, liveMinute: number, date: string | undefined) {
+function useSunText(mode: Mode, minute: number, liveMinute: number, date: string | undefined, liveDate: string) {
   return useMemo(() => {
-    if (!date) return null;
     const isLive = mode === "live";
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/Montreal" });
-    const d = isLive ? today : date;
+    const d = isLive ? liveDate : date;
+    if (!d) return null;
     const m = isLive ? liveMinute : mode === "stations" ? 1118 : minute;
     const p = sunPos(montrealMs(d, m));
     const alt = (p.alt * 180) / Math.PI;
     if (alt > -0.8) return { up: true, text: `${Math.round(alt)}°`, dir: compass(p.az) };
     return { up: false, text: "down", dir: `rises ${sunTimes(d).riseText}` };
     // minute is bucketed by the caller so this recomputes a few times per story hour
-  }, [mode, minute, liveMinute, date]);
+  }, [mode, minute, liveMinute, date, liveDate]);
 }
 
 export function Deck() {
@@ -34,7 +32,9 @@ export function Deck() {
   const chapter = useUI((s) => s.chapter);
   const chapters = useStory((s) => s.chapters);
   const meta = useData((d) => d.meta);
-  const sun = useSunText(mode, Math.round(minute / 4) * 4, liveMinute, meta?.storyDay.date);
+  const liveDay = useUI((s) => s.liveDay);
+  const liveDate = useUI((s) => s.liveDate);
+  const sun = useSunText(mode, Math.round(minute / 4) * 4, liveMinute, meta?.storyDay.date, liveDate);
 
   // Space toggles playback when focus is not in a control
   useEffect(() => {
@@ -51,7 +51,7 @@ export function Deck() {
   const disabled = mode === "live" || mode === "stations";
   const value = mode === "live" ? liveMinute : Math.round(minute / 5) * 5;
   const storyWd = meta?.storyDay.weekday ?? 3;
-  const clockDay = mode === "live" ? DAYS[montrealNow().day] : mode === "rhythm" ? DAYS[day] : DAYS[storyWd];
+  const clockDay = mode === "live" ? (liveDate ? DAYS[liveDay] : "—") : mode === "rhythm" ? DAYS[day] : DAYS[storyWd];
   const label = mode === "live" ? "Montréal time" : mode === "stations" ? "Season average" : mode === "rhythm" ? "Hour of the week" : "Story day";
 
   return (
@@ -93,8 +93,8 @@ export function Deck() {
         />
         <div className="ticks" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
       </div>
-      <button className="play" aria-pressed={playing} aria-label={playing ? "Pause" : "Play the day"} onClick={play} disabled={mode === "live"}>
-        <svg viewBox="0 0 24 24" fill="#f3dcb0">
+      <button className="play" aria-pressed={playing} aria-label={playing ? "Pause" : "Play the day"} onClick={play}>
+        <svg viewBox="0 0 24 24">
           {playing ? (
             <><rect x="7" y="5.5" width="3.6" height="13" rx="1.2" /><rect x="13.4" y="5.5" width="3.6" height="13" rx="1.2" /></>
           ) : (

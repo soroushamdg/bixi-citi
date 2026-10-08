@@ -3,7 +3,7 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { ui, data, type Mode } from "./store";
 import { buildChapters, HOME, MTLN, type Chapter } from "./chapters";
-import { montrealNow } from "./load";
+import { tickLiveClock } from "./load";
 import type { SceneHandle } from "@/scene";
 
 /** A story hour lasts this many real seconds: a day in ~2.6 minutes. */
@@ -13,10 +13,10 @@ export interface Caption { tag: string; step: string; title: string; body: strin
 interface StoryState { chapters: Chapter[]; caption: Caption }
 
 const INTRO: Caption = {
-  tag: "BIXI STORY",
-  step: "Intro",
-  title: "A real day of rides across Montréal",
-  body: "Every pillar is a BIXI station. Press play and the city fills with the trips of one real summer day while the sun crosses the sky, from the first commuters to the last rides home.",
+  tag: "LIVE",
+  step: "Right now",
+  title: "Montréal's bikes, this minute",
+  body: "Every pillar is a BIXI station, as tall as the bikes docked there now. A pulse is a real bike leaving or docking. Press play to watch one real summer day of rides, start to finish.",
   compact: false,
   cta: true,
 };
@@ -50,7 +50,7 @@ export function setCaption(c: Partial<Caption>) {
 export function setMode(m: Mode, fromTour = false) {
   const s = ui.getState();
   ui.setState({ mode: m, hover: null });
-  if (m === "live") ui.setState({ liveMinute: montrealNow().minute });
+  if (m === "live") tickLiveClock();
   if (!fromTour) {
     freePlay = m === "flows" || m === "rhythm";
     setPlaying(false);
@@ -130,7 +130,7 @@ function tick(now: number) {
   const s = ui.getState();
   if (s.mode === "live" && now - lastLive > 5000) {
     lastLive = now;
-    ui.setState({ liveMinute: montrealNow().minute });
+    tickLiveClock();
   }
   if (!s.playing) return;
   const chapters = story.getState().chapters;

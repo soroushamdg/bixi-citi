@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { data } from "@/lib/store";
-import { loadHistory, startLive } from "@/lib/load";
+import { loadHistory, startLive, tickLiveClock } from "@/lib/load";
 import { introCaption, refreshChapters, startStory } from "@/lib/story-controller";
 import { bindTip } from "@/lib/tip";
 import { Header } from "./Header";
@@ -21,6 +21,7 @@ export function Console(props: ConsoleProps) {
   const tip = useRef<HTMLDivElement>(null);
   useEffect(() => {
     bindTip(tip.current);
+    tickLiveClock();
     introCaption();
     const stop = startStory();
     const unsub = data.subscribe((s, prev) => {

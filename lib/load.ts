@@ -154,5 +154,6 @@ export function montrealNow() {
   return { day: Math.max(0, WD.indexOf(p.weekday.slice(0, 3))), minute: (+p.hour % 24) * 60 + +p.minute };
 }
 export function tickLiveClock() {
-  ui.setState({ liveMinute: montrealNow().minute });
+  const now = montrealNow();
+  ui.setState({ liveMinute: now.minute, liveDay: now.day, liveDate: new Date().toLocaleDateString("en-CA", { timeZone: "America/Montreal" }) });
 }
