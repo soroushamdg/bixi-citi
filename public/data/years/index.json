@@ -1,0 +1,370 @@
+{
+ "generatedAt": "2026-10-08T18:18:35.447Z",
+ "years": [
+  {
+   "year": 2014,
+   "trips": 3136276,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 459,
+   "newStations": null,
+   "peak": {
+    "date": "2014-06-19",
+    "trips": 23603,
+    "weekday": 3
+   },
+   "medianMin": 10.4,
+   "memberShare": 0.884,
+   "growth": null,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2014.zip",
+   "etag": null
+  },
+  {
+   "year": 2015,
+   "trips": 3443883,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 460,
+   "newStations": 2,
+   "peak": {
+    "date": "2015-07-03",
+    "trips": 24956,
+    "weekday": 4
+   },
+   "medianMin": 10.9,
+   "memberShare": 0.837,
+   "growth": 0.098,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2015.zip",
+   "etag": null
+  },
+  {
+   "year": 2016,
+   "trips": 4000080,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 465,
+   "newStations": 5,
+   "peak": {
+    "date": "2016-07-31",
+    "trips": 29907,
+    "weekday": 6
+   },
+   "medianMin": 11.1,
+   "memberShare": 0.808,
+   "growth": 0.162,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2016.zip",
+   "etag": null
+  },
+  {
+   "year": 2017,
+   "trips": 4740357,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 546,
+   "newStations": 93,
+   "peak": {
+    "date": "2017-07-30",
+    "trips": 40441,
+    "weekday": 6
+   },
+   "medianMin": 10.9,
+   "memberShare": 0.811,
+   "growth": 0.185,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2017.zip",
+   "etag": null
+  },
+  {
+   "year": 2018,
+   "trips": 5277541,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 552,
+   "newStations": 45,
+   "peak": {
+    "date": "2018-06-08",
+    "trips": 36654,
+    "weekday": 4
+   },
+   "medianMin": 10.7,
+   "memberShare": 0.831,
+   "growth": 0.113,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2018.zip",
+   "etag": null
+  },
+  {
+   "year": 2019,
+   "trips": 5573357,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+   ],
+   "stationsActive": 619,
+   "newStations": 129,
+   "peak": {
+    "date": "2019-05-26",
+    "trips": 42564,
+    "weekday": 6
+   },
+   "medianMin": 10.8,
+   "memberShare": 0.821,
+   "growth": 0.086,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2019.zip",
+   "etag": null
+  },
+  {
+   "year": 2020,
+   "trips": 3264741,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 641,
+   "newStations": 73,
+   "peak": {
+    "date": "2020-08-01",
+    "trips": 25297,
+    "weekday": 5
+   },
+   "medianMin": 12.6,
+   "memberShare": 0.797,
+   "growth": -0.44,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2020.zip",
+   "etag": null
+  },
+  {
+   "year": 2021,
+   "trips": 5471781,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 824,
+   "newStations": 132,
+   "peak": {
+    "date": "2021-08-27",
+    "trips": 38428,
+    "weekday": 4
+   },
+   "medianMin": 10.9,
+   "memberShare": 0.824,
+   "growth": 0.676,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2021.zip",
+   "etag": null
+  },
+  {
+   "year": 2022,
+   "trips": 8698688,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "stationsActive": 866,
+   "newStations": 75,
+   "peak": {
+    "date": "2022-06-11",
+    "trips": 57529,
+    "weekday": 5
+   },
+   "medianMin": 10.8,
+   "memberShare": null,
+   "growth": 0.59,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2023/08/DonneesOuverte2022.zip",
+   "etag": null
+  },
+  {
+   "year": 2023,
+   "trips": 11387206,
+   "partial": false,
+   "months": [
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "stationsActive": 937,
+   "newStations": 96,
+   "peak": {
+    "date": "2023-09-15",
+    "trips": 70077,
+    "weekday": 4
+   },
+   "medianMin": 10.6,
+   "memberShare": null,
+   "growth": 0.299,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2024/01/DonneesOuvertes2023_12.zip",
+   "etag": null
+  },
+  {
+   "year": 2024,
+   "trips": 12978227,
+   "partial": false,
+   "months": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "stationsActive": 1129,
+   "newStations": 157,
+   "peak": {
+    "date": "2024-07-04",
+    "trips": 77905,
+    "weekday": 3
+   },
+   "medianMin": 10.5,
+   "memberShare": null,
+   "growth": 0.119,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2025/01/DonneesOuvertes2024_010203040506070809101112.zip",
+   "etag": "\"098c1677f7641bb6a14f36f67ed37ffa\""
+  },
+  {
+   "year": 2025,
+   "trips": 13991402,
+   "partial": false,
+   "months": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "stationsActive": 1300,
+   "newStations": 258,
+   "peak": {
+    "date": "2025-06-11",
+    "trips": 95837,
+    "weekday": 2
+   },
+   "medianMin": 10.7,
+   "memberShare": null,
+   "growth": 0.078,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2026/02/DonneesOuvertes2025_010203040506070809101112.zip",
+   "etag": "\"1bceb36fcad3060675471794d2a1326b\""
+  },
+  {
+   "year": 2026,
+   "trips": 9329149,
+   "partial": true,
+   "months": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "stationsActive": 1316,
+   "newStations": 140,
+   "peak": {
+    "date": "2026-07-17",
+    "trips": 86056,
+    "weekday": 4
+   },
+   "medianMin": 10.7,
+   "memberShare": null,
+   "growth": 0.01,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2026/02/DonneesOuvertes2026_0102030405060708.zip",
+   "etag": "\"1c4d49bee8ffb3f4c1c41e1f83e36da3\""
+  }
+ ],
+ "allTimePeak": {
+  "date": "2025-06-11",
+  "trips": 95837,
+  "weekday": 2,
+  "year": 2025
+ }
+}
