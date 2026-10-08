@@ -17,7 +17,7 @@
   "lastModified": "Tue, 29 Sep 2026 17:54:43 GMT",
   "etag": "\"1c4d49bee8ffb3f4c1c41e1f83e36da3\""
  },
- "generatedAt": "2026-10-08T16:23:37.523Z",
+ "generatedAt": "2026-10-08T17:20:13.826Z",
  "rows": 9504051,
  "trips": 9329149,
  "excluded": {
@@ -33,7 +33,7 @@
  "medianMin": 10.7,
  "medianKm": 1.56,
  "downhill": 0.553,
- "slopeShare": 0.809,
+ "slopeShare": 0.81,
  "roundTrips": 0.026,
  "busiestDay": {
   "date": "2026-07-17",
@@ -50,9 +50,9 @@
  "windows": {
   "wake": {
    "trips": 2461,
-   "downhill": 0.573,
-   "down": 1128,
-   "up": 840,
+   "downhill": 0.57,
+   "down": 1119,
+   "up": 845,
    "medianKm": 1.65,
    "medianMin": 9.1,
    "meanDrop": -3.4,
@@ -80,8 +80,8 @@
   "morning": {
    "trips": 9190,
    "downhill": 0.591,
-   "down": 4459,
-   "up": 3080,
+   "down": 4465,
+   "up": 3096,
    "medianKm": 1.71,
    "medianMin": 10.1,
    "meanDrop": -4.4,
@@ -108,9 +108,9 @@
   },
   "lunch": {
    "trips": 5340,
-   "downhill": 0.539,
-   "down": 2213,
-   "up": 1892,
+   "downhill": 0.538,
+   "down": 2210,
+   "up": 1898,
    "medianKm": 1.32,
    "medianMin": 9,
    "meanDrop": -1.9,
@@ -138,8 +138,8 @@
   "evening": {
    "trips": 16980,
    "downhill": 0.566,
-   "down": 7652,
-   "up": 5868,
+   "down": 7664,
+   "up": 5875,
    "medianKm": 1.58,
    "medianMin": 10.7,
    "meanDrop": -2.6,
@@ -166,9 +166,9 @@
   },
   "night": {
    "trips": 11222,
-   "downhill": 0.453,
-   "down": 3991,
-   "up": 4823,
+   "downhill": 0.454,
+   "down": 4008,
+   "up": 4812,
    "medianKm": 1.77,
    "medianMin": 14,
    "meanDrop": 1.6,
