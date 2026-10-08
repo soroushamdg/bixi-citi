@@ -88,9 +88,9 @@ npm run history:years -- --all           # rebuild every year from zips already 
 
 ### Visitor counter
 
-The tab in the bottom-left margin shows how many people have the site open, and on hover the unique visitors today (since midnight in Montréal) and in total. Each browser gets a random id in localStorage (no cookies). `/api/presence` keeps a Redis sorted set of heartbeats for "online now" and HyperLogLogs for the unique counts, so ids aren't stored for the totals. The shared `GET` is cached at the edge for 15 s. A visitor costs one Redis command a minute, plus eight when the page opens.
+The tab in the bottom-left margin shows how many people have the site open, and on hover the unique visitors today (since midnight in Montréal) and in total. Each browser gets a random id in localStorage (no cookies). `/api/presence` keeps a Redis sorted set of heartbeats for "online now" and HyperLogLogs for the unique counts, so ids aren't stored for the totals. The shared `GET` is cached at the edge for 15 s. A visitor costs one Redis command a minute, plus eight when the page opens. Over TCP each warm function keeps one connection.
 
-It needs a Redis database with a REST API. On Vercel: Storage → Create → Upstash for Redis (free tier) → connect it to the project, which adds `KV_REST_API_URL` and `KV_REST_API_TOKEN`; then redeploy. `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` work too. Without them, `npm run dev` counts in memory and production hides the tab.
+It needs a Redis database. Set `REDIS_URL` (a `redis://` or `rediss://` connection string, which is what Vercel's Redis integration adds when you connect a database to the project), or a REST endpoint: `KV_REST_API_URL` + `KV_REST_API_TOKEN` (Upstash through Vercel) or `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`. Redeploy after adding it. Without any of them, `npm run dev` counts in memory and production hides the tab.
 
 ## Layout
 

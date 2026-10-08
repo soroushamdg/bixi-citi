@@ -10,11 +10,11 @@ import { BRAND } from "./brand-icons";
 export const SITE = "https://bixi-citi.vercel.app";
 const VIDEO = "/video/bixi-citi-showreel.mp4";
 const POSTER = "/video/poster.jpg";
-const TITLE = "BIXI Citi";
-const TEXT = "BIXI Citi: storytelling with BIXI Montréal data. Live stations, real rides and 13 seasons, over a 3D Montréal.";
+export const TITLE = "BIXI Citi";
+export const TEXT = "BIXI Citi: storytelling with BIXI Montréal data. Live stations, real rides and 13 seasons, over a 3D Montréal.";
 
 /** the public address, also when running locally */
-const siteUrl = () => (typeof location === "undefined" || /^(localhost|127\.|\[::1\])/.test(location.hostname) ? SITE : location.origin);
+export const siteUrl = () => (typeof location === "undefined" || /^(localhost|127\.|\[::1\])/.test(location.hostname) ? SITE : location.origin);
 const enc = encodeURIComponent;
 
 async function writeClipboard(text: string) {
@@ -33,7 +33,7 @@ async function writeClipboard(text: string) {
     return ok;
   }
 }
-function useCopy(): [boolean, (text: string) => void] {
+export function useCopy(): [boolean, (text: string) => void] {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -65,7 +65,7 @@ const mmss = (s: number) => {
 };
 
 /* ---------- icons ---------- */
-const Ico = {
+export const Ico = {
   share: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M12 3.5v11.5M7.8 7.6 12 3.4l4.2 4.2M5.5 12.5v5.6a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-5.6" />
@@ -144,7 +144,7 @@ const Ico = {
 };
 
 /* ---------- player ---------- */
-function Player() {
+export function Player() {
   const box = useRef<HTMLDivElement>(null);
   const vid = useRef<HTMLVideoElement>(null);
   const track = useRef<HTMLDivElement>(null);
@@ -156,6 +156,7 @@ function Player() {
   const [full, setFull] = useState(false);
   const [nudge, setNudge] = useState<{ dir: -1 | 1; n: number } | null>(null);
   const [copied, copy] = useCopy();
+  const wakeTap = useRef(false);
 
   const paint = useCallback(() => {
     const v = vid.current;
@@ -198,10 +199,14 @@ function Player() {
   };
   const toggleFull = () => {
     const el = box.current as (HTMLDivElement & { webkitRequestFullscreen?: () => void }) | null;
+    const v = vid.current as (HTMLVideoElement & { webkitEnterFullscreen?: () => void }) | null;
     if (!el) return;
     if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
-    else if (el.requestFullscreen) el.requestFullscreen().catch(() => undefined);
-    else el.webkitRequestFullscreen?.();
+    else if (el.requestFullscreen && document.fullscreenEnabled) {
+      // phones: turn the film sideways where the browser allows it
+      el.requestFullscreen().then(() => (screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }).lock?.("landscape")).catch(() => undefined);
+    } else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    else v?.webkitEnterFullscreen?.(); // iPhone: only the video element itself can go full screen
   };
   const seekAt = (clientX: number) => {
     const v = vid.current, t = track.current;
@@ -239,7 +244,12 @@ function Player() {
         poster={POSTER}
         preload="metadata"
         playsInline
-        onClick={toggle}
+        onPointerDown={(e) => {
+          // touch: a tap on a playing film with hidden controls only brings them back
+          wakeTap.current = e.pointerType !== "mouse" && playing && idle;
+          if (wakeTap.current) wake();
+        }}
+        onClick={() => { if (wakeTap.current) wakeTap.current = false; else toggle(); }}
         onPlay={() => { setPlaying(true); wake(); }}
         onPause={() => setPlaying(false)}
         onEnded={() => setPlaying(false)}
@@ -302,7 +312,7 @@ function Player() {
 }
 
 /* ---------- sheet ---------- */
-function ShareSheet({ onClose }: { onClose: () => void }) {
+export function ShareSheet({ onClose, video = true }: { onClose: () => void; video?: boolean }) {
   const card = useRef<HTMLDivElement>(null);
   const [leaving, setLeaving] = useState(false);
   const [copied, copy] = useCopy();
@@ -340,12 +350,12 @@ function ShareSheet({ onClose }: { onClose: () => void }) {
           <div>
             <span className="label share-kicker">Share</span>
             <h2 id="share-title">BIXI Citi</h2>
-            <p>Storytelling with BIXI Montréal data. Thirty seconds of it below.</p>
+            <p>{video ? "Storytelling with BIXI Montréal data. Thirty seconds of it below." : "Storytelling with BIXI Montréal data. Send the link to a bigger screen."}</p>
           </div>
           <button className="share-x" aria-label="Close" onClick={close}>{Ico.close}</button>
         </div>
 
-        <Player />
+        {video && <Player />}
 
         <div className="share-sec">
           <label className="label" htmlFor="share-url">Link</label>

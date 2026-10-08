@@ -431,7 +431,7 @@ body{transition:background-color .35s,color .35s}
 .phone-gate{display:none}
 @media (pointer:coarse) and (max-width:760px),(pointer:coarse) and (max-height:500px){
   .app,.tip,.tour,.visitors{display:none!important}
-  html,body{height:100%;overflow:hidden}
+  html,body{height:auto;min-height:100%;overflow-x:hidden}
   .phone-gate{display:grid;place-items:center;min-height:100svh;padding:24px 16px calc(24px + env(safe-area-inset-bottom));
     background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--brand) 14%,transparent),transparent 60%),var(--console)}
 }
@@ -442,7 +442,14 @@ body{transition:background-color .35s,color .35s}
 .gate-kicker{color:var(--brand)}
 .gate-card h1{margin:0;font-family:var(--display);font-weight:600;font-size:clamp(22px,6.4vw,28px);line-height:1.15;letter-spacing:-.01em;color:var(--ink);text-wrap:balance}
 .gate-card p{margin:0;color:var(--ink-2);font-size:15px;line-height:1.55;text-wrap:pretty}
-.gate-btn{margin-top:6px;min-height:46px;padding:0 22px;border:0;border-radius:999px;font:600 15px/1 var(--body);color:#fff;background:var(--brand);
+.gate-card .player{justify-self:stretch;margin:4px 0 2px;border-radius:16px}
+.gate-actions{justify-self:stretch;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+.gate-actions svg{width:18px;height:18px}
+.gate-ghost{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 18px;border-radius:999px;font:600 15px/1 var(--body);color:var(--ink);
+  box-shadow:var(--raise-sm),var(--edge);transition:color .2s,box-shadow .2s}
+.gate-ghost:active{box-shadow:var(--press-sm)}
+.gate-ghost[data-copied="true"]{color:var(--in-glow)}
+.gate-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border:0;border-radius:999px;font:600 15px/1 var(--body);color:#fff;background:var(--brand);
   box-shadow:0 8px 22px -8px color-mix(in srgb,var(--brand) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer}
 .gate-btn:active{transform:translateY(1px)}
 .gate-btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
@@ -509,7 +516,7 @@ body{transition:background-color .35s,color .35s}
   background:rgba(16,19,26,.36);-webkit-backdrop-filter:blur(14px) saturate(1.5);backdrop-filter:blur(14px) saturate(1.5);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 0 1px rgba(255,255,255,.16),0 14px 34px rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.3,1.5,.5,1),opacity .25s}
 .player-big svg{width:28px;height:28px;margin-left:4px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.4))}
-.player-big:hover{transform:scale(1.07)}
+@media (hover:hover){.player-big:hover{transform:scale(1.07)}}
 .player-big::before{content:"";position:absolute;inset:-7px;border-radius:50%;border:1px solid rgba(255,255,255,.18);animation:big-ring 2.6s ease-out infinite}
 @keyframes big-ring{0%{transform:scale(.92);opacity:.9}70%,100%{transform:scale(1.25);opacity:0}}
 .player[data-playing="true"] .player-big{opacity:0;transform:scale(.82);pointer-events:none}
@@ -518,7 +525,7 @@ body{transition:background-color .35s,color .35s}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 0 0 1px rgba(255,255,255,.08),0 10px 30px -10px rgba(0,0,0,.5);transition:opacity .35s,transform .35s cubic-bezier(.2,.9,.25,1)}
 .player[data-playing="true"][data-idle="true"] .player-bar{opacity:0;transform:translateY(8px)}
 .pbtn{flex:none;width:36px;height:36px;border-radius:11px;display:grid;place-items:center;color:rgba(255,255,255,.86);transition:background .2s,color .2s,transform .15s}
-.pbtn:hover{background:rgba(255,255,255,.13);color:#fff}
+@media (hover:hover){.pbtn:hover{background:rgba(255,255,255,.13);color:#fff}}
 .pbtn:active{transform:scale(.92)}
 .pbtn svg{width:20px;height:20px}
 .pbtn.pmain svg{width:18px;height:18px}
@@ -573,3 +580,9 @@ body{transition:background-color .35s,color .35s}
 .vis-card .now dd{color:var(--in-glow)}
 .vis-card p{margin:12px 0 0;font-size:11px;line-height:1.45;color:var(--ink-3)}
 @media (prefers-reduced-motion:reduce){.vis-dot::after,.vis-pill b{animation:none}}
+
+/* touch screens have no hover: the video-link button shows with the controls */
+@media (hover:none){.player .player-copy{opacity:1;transform:none}.player .player-copy span{max-width:0;margin:0}
+  .player[data-playing="true"][data-idle="true"] .player-copy:not([data-copied="true"]){opacity:0}}
+@media (hover:none){.player .player-copy[data-copied="true"] span{max-width:160px;margin:0 8px 0 4px}}
+.player button,.player video,.share-card button,.share-card a,.gate-actions button{-webkit-tap-highlight-color:transparent}
