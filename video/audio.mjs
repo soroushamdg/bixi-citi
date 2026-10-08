@@ -300,8 +300,9 @@ function picture() {
   boom(0.96, 0.9);
   crash(0.96, 0.35, 1.6);
   for (let k = 0; k < 7; k++) tick(1.02 + k * 0.045, 0.22, 2400 + k * 300, -0.3 + k * 0.1);
-  for (let i = 0; i < 5; i++) bell(1.5 + i * 0.05, hz(81 + [0, 3, 5, 7, 10][i]), 0.05, -0.4 + i * 0.2, 6, 2, 1, 0.5, fx);
-  const TAG = 38;
+  // one note per letter of the word, one tick per typed character (same strings as the picture)
+  const WORD = "CITI", TAG = "STORYTELLING WITH BIXI MONTRÉAL DATA".length;
+  for (let i = 0; i < WORD.length; i++) bell(1.5 + i * 0.05, hz(81 + [0, 3, 5, 7, 10][i]), 0.05, -0.4 + i * 0.2, 6, 2, 1, 0.5, fx);
   for (let k = 0; k < TAG; k++) if (k % 2 === 0) tick(1.75 + (k / TAG) * 0.55, 0.12, 4200, 0.2);
   riser(2.2, 0.8);
   whoosh(2.55, 0.55, 400, 3200, 0.5, 0, 0, "swell");
@@ -348,7 +349,7 @@ function picture() {
   boom(27.05, 1);
   crash(27.05, 0.6, 2.6);
   shimmer(27.1, [69, 76, 81, 84, 88, 93], 0.045, 0.06);
-  for (let i = 0; i < 5; i++) tick(27.3 + i * 0.05, 0.14, 3000, -0.3 + i * 0.15);
+  for (let i = 0; i < WORD.length; i++) tick(27.3 + i * 0.05, 0.14, 3000, -0.3 + i * 0.15);
   for (let k = 0; k < 20; k++) tick(27.65 + (k / 20) * 0.5, 0.12, 4400, 0);
   bell(28.25, hz(76), 0.07, 0, 1.2, 2, 1.5, 0.8, fx);
   bell(29.0, hz(57), 0.1, -0.2, 0.7, 1, 0.8, 0.9, fx);

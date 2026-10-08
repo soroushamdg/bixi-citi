@@ -1,5 +1,5 @@
 /**
- * BIXI Story — 30 s showreel. A deterministic composition: `seek(t)` sets every
+ * BIXI Citi — 30 s showreel. A deterministic composition: `seek(t)` sets every
  * element for time t (seconds) from scratch, so any frame renders on its own.
  * The 3D footage is the real app (video/capture.mjs); every number is real data
  * exported from the app (video/ui.mjs → data.js).
@@ -189,13 +189,26 @@ const arcs = [];
   }
 }
 const core = el(`<div class="abs" style="left:948px;top:528px;width:24px;height:24px;border-radius:50%;background:#ff5a4c;box-shadow:0 0 30px 8px rgba(238,49,36,.55),0 0 90px 20px rgba(238,49,36,.25)"></div>`, intro);
+/** the logo lockup is centred once the fonts are in: capsule (520) + gap (48) + word */
+const WORD = "CITI";
+let CAPX = 751, WORDX = 1060;
+function layoutLockup() {
+  const w = story.getBoundingClientRect().width;
+  const left = 960 - (520 + 48 + w) / 2;
+  CAPX = left + 260;
+  WORDX = left + 568;
+  introGroup.style.transformOrigin = `${CAPX}px 520px`;
+  iris.setAttribute("cx", CAPX);
+  story.style.left = storyB.style.left = `${WORDX}px`;
+  capWrapB.style.left = `${CAPX}px`;
+}
 const introGroup = el(`<div class="abs" style="left:0;top:0;width:${W}px;height:${H}px;transform-origin:751px 520px"></div>`, intro);
 const capWrap = el(`<div class="abs" style="left:960px;top:520px"></div>`, introGroup);
 const capA = makeCapsule(capWrap);
 const story = el(`<div class="wordStory abs" style="left:1060px;top:482px"></div>`, introGroup);
-const storyL = letters(story, "STORY");
+const storyL = letters(story, WORD);
 const tagline = el(`<div class="abs label" style="left:0;width:${W}px;top:688px;text-align:center;letter-spacing:.34em;font-size:21px;color:#c7ccd6"></div>`, introGroup);
-const TAG = "AN UNOFFICIAL PORTRAIT OF BIXI MONTRÉAL";
+const TAG = "STORYTELLING WITH BIXI MONTRÉAL DATA";
 const tagRule = el(`<div class="abs" style="left:760px;width:400px;top:736px;height:2px;background:linear-gradient(90deg,transparent,#e24b3f,transparent);transform-origin:50% 50%"></div>`, introGroup);
 const iris = sel(`<circle cx="751" cy="520" r="0" fill="none" stroke="#ff7a6b" stroke-width="6" style="filter:drop-shadow(0 0 18px rgba(238,49,36,.9))"/>`, L.fx);
 
@@ -230,7 +243,7 @@ function sceneIntro(t) {
 
   // capsule: pops at centre, then slides left to make room for STORY
   const slide = P(t, 1.3, 1.75, E.io3);
-  css(capWrap, { left: `${mix(960, 751, slide)}px`, transform: `scale(${Math.max(0.001, pop)})`, opacity: P(t, 0.92, 1.0) });
+  css(capWrap, { left: `${mix(960, CAPX, slide)}px`, transform: `scale(${Math.max(0.001, pop)})`, opacity: P(t, 0.92, 1.0) });
   animCapsule(capA, t, 1.02);
   capA.glow.style.opacity = 0.6 + 0.4 * pulse(t, 0.95, 0.1, 0.8);
   storyL.forEach((s, i) => {
@@ -265,7 +278,7 @@ function sceneCity(t) {
   if (live) {
     const ip = P(t, 2.55, 3.1, E.io3);
     foot("city", fr, {
-      clipPath: ip < 1 ? `circle(${ip * 1300}px at 751px 520px)` : "",
+      clipPath: ip < 1 ? `circle(${ip * 1300}px at ${CAPX}px 520px)` : "",
       transform: `scale(${mix(1.18, 1.0, P(t, 2.55, 4.2, E.out3))})`,
       zIndex: 2,
     });
@@ -749,7 +762,7 @@ const outroGroup = el(`<div class="abs" style="left:0;top:0;width:${W}px;height:
 const capWrapB = el(`<div class="abs" style="left:751px;top:420px"></div>`, outroGroup);
 const capB = makeCapsule(capWrapB);
 const storyB = el(`<div class="wordStory abs" style="left:1060px;top:382px"></div>`, outroGroup);
-const storyBL = letters(storyB, "STORY");
+const storyBL = letters(storyB, WORD);
 const url = el(`<div class="abs" style="left:0;width:${W}px;top:580px;text-align:center;font:500 46px/1 var(--mono);letter-spacing:.02em;color:#eef0f5"></div>`, outroGroup);
 const URL_TXT = "bixi-citi.vercel.app";
 const urlRule = el(`<div class="abs" style="left:700px;width:520px;top:648px;height:3px;background:#e24b3f;box-shadow:0 0 18px rgba(238,49,36,.8);transform-origin:50% 50%"></div>`, outroGroup);
@@ -799,7 +812,7 @@ function sceneOutro(t) {
 const hud = el(`<div class="full"></div>`, L.hud);
 [[44, 44, "border-top-width:2px;border-left-width:2px"], [W - 78, 44, "border-top-width:2px;border-right-width:2px"], [44, H - 78, "border-bottom-width:2px;border-left-width:2px"], [W - 78, H - 78, "border-bottom-width:2px;border-right-width:2px"]]
   .map(([x, y, b]) => el(`<i class="corner" style="left:${x}px;top:${y}px;${b}"></i>`, hud));
-const hudTL = el(`<div class="abs hud" style="left:96px;top:56px"><span class="rec"></span>BIXI Story <span style="opacity:.55">— showreel</span></div>`, hud);
+const hudTL = el(`<div class="abs hud" style="left:96px;top:56px"><span class="rec"></span>BIXI Citi <span style="opacity:.55">— showreel</span></div>`, hud);
 const hudTR = el(`<div class="abs hud" style="right:96px;top:56px;text-align:right"></div>`, hud);
 const hudBR = el(`<div class="abs hud" style="right:96px;bottom:56px;text-align:right"></div>`, hud);
 const hudBL = el(`<div class="abs hud" style="left:96px;bottom:56px"></div>`, hud);
@@ -879,9 +892,11 @@ const staticImgs = [...document.querySelectorAll("#ui img")].map((i) => (i.compl
 
 window.DURATION = 30;
 window.FPS = FPS;
+let laidOut = false;
 window.seek = async (t) => {
   await fontsReady;
   await Promise.all(staticImgs);
+  if (!laidOut) { layoutLockup(); laidOut = true; }
   const frameIdx = Math.round(t * FPS);
   pending = [];
   for (const img of allFeet) { img._used = false; Object.assign(img.style, BLANK); }

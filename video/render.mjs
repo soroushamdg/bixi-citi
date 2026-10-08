@@ -2,9 +2,9 @@
  * Renders the composition (video/comp) frame by frame in headless Chromium and
  * encodes it with ffmpeg, in parallel segments.
  *
- *   PLAYWRIGHT_BROWSERS_PATH=.cache/playwright node video/render.mjs            → video/bixi-story-showreel.mp4
+ *   PLAYWRIGHT_BROWSERS_PATH=.cache/playwright node video/render.mjs            → video/bixi-citi-showreel.mp4
  *   PLAYWRIGHT_BROWSERS_PATH=.cache/playwright node video/render.mjs --stills 1.2,4,9.5   → video/build/stills/*.png
- *   node video/render.mjs --mux    → picture.mp4 + audio.wav → video/bixi-story-showreel.mp4 (+ -master.mp4)
+ *   node video/render.mjs --mux    → picture.mp4 + audio.wav → video/bixi-citi-showreel.mp4 (+ -master.mp4)
  */
 import { chromium } from "playwright";
 import { createServer } from "node:http";
@@ -41,8 +41,8 @@ async function openPage() {
   return page;
 }
 
-const OUT = join(here, "bixi-story-showreel.mp4");
-const MASTER = join(here, "bixi-story-showreel-master.mp4");
+const OUT = join(here, "bixi-citi-showreel.mp4");
+const MASTER = join(here, "bixi-citi-showreel-master.mp4");
 const ff = (a) => new Promise((r, j) => spawn(FFMPEG, ["-loglevel", "error", "-y", ...a], { stdio: "inherit" }).on("close", (c) => (c ? j(new Error("ffmpeg")) : r())));
 const BT709 = ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709"];
 /**
