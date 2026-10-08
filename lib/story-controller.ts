@@ -168,6 +168,14 @@ export function showLandmark(key: string) {
   setCaption({ tag: "Landmark", step: "Modelled by hand", title: l.name, body: l.blurb, compact: false, cta: false });
 }
 
+/** Fly alongside a famous bridge. */
+export function showBridge(name: string, blurb: string) {
+  setPlaying(false);
+  ui.setState({ chapter: -1 });
+  scene?.flyToBridge(name);
+  setCaption({ tag: "Bridge", step: "Modelled by hand", title: name, body: blurb, compact: false, cta: false });
+}
+
 export function resetView() {
   scene?.flyTo(ui.getState().mtlNorth ? HOME : [HOME[0], HOME[1], HOME[2], 0, HOME[4]], 1400);
 }

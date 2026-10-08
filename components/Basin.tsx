@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { data, ui, useData, useUI, type Sel } from "@/lib/store";
 import { SAMPLE_PER_DAY } from "@/lib/formats/years";
 import { LANDMARKS } from "@/lib/landmarks";
-import { attachScene, getScene, play, resetView, showLandmark, useStory } from "@/lib/story-controller";
+import { attachScene, getScene, play, resetView, showBridge, showLandmark, useStory } from "@/lib/story-controller";
+import { BRIDGES } from "@/lib/bridges";
 import { HOME } from "@/lib/chapters";
 import { hideTip, row, showTip, title } from "@/lib/tip";
 import { StationCard } from "./StationCard";
@@ -182,6 +183,17 @@ export function Basin() {
                 <button onClick={() => { showLandmark(l.key); setPlaces(false); }} title={l.blurb}>
                   <b>{l.name}</b>
                   <span>{l.blurb}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <span className="label">Bridges</span>
+          <ul>
+            {BRIDGES.filter((b) => b.famous).map((b) => (
+              <li key={b.osm}>
+                <button onClick={() => { showBridge(b.name, b.blurb ?? ""); setPlaces(false); }} title={b.blurb}>
+                  <b>{b.name}</b>
+                  <span>{b.blurb}</span>
                 </button>
               </li>
             ))}

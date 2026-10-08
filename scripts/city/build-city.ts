@@ -13,12 +13,14 @@
  */
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { gzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 import sharp from "sharp";
 import {
-  BLOCK, BLOCKS_PER_TILE, GRID_BEARING, KX, KY, LAT0, LON0, REGION, TILE, fromGrid, project, toGrid,
+  BLOCK, BLOCKS_PER_TILE, BUILDING_EX, EXZ, GRID_BEARING, KX, KY, LAT0, LON0, REGION, TILE, fromGrid, project, toGrid,
 } from "../../lib/geo";
-import { encodeTerrain, type Terrain } from "../../lib/formats/terrain";
+import { decodeTerrain, encodeTerrain, groundAt, type Terrain } from "../../lib/formats/terrain";
+import { BRIDGES, type BuiltBridge } from "../../lib/bridges";
+
 import { KIND, encodeBlocks, encodeTile, type CityIndex, type TileBuilding } from "../../lib/formats/city";
 import { loadDem, type Dem } from "../lib/dem";
 import type { OsmElement, OsmGeomPoint } from "../lib/overpass";
@@ -28,7 +30,7 @@ import { LANDMARKS, PLATEAU } from "../../lib/landmarks";
 
 const OUT = "public/city";
 const WORK = ".cache/city";
-const only = new Set((process.argv.find((a) => a.startsWith("--only="))?.slice(7) ?? "mask,terrain,buildings").split(","));
+const only = new Set((process.argv.find((a) => a.startsWith("--only="))?.slice(7) ?? "mask,terrain,buildings,bridges").split(","));
 
 const t0 = Date.now();
 const log = (s: string) => console.log(`[${((Date.now() - t0) / 1000).toFixed(1).padStart(6)} s] ${s}`);
@@ -454,6 +456,89 @@ async function buildBuildings(dem: Dem) {
   log("index.json written");
 }
 
+/* ---------- bridges ---------- */
+async function buildBridges() {
+  const terrain = decodeTerrain(new Uint8Array(gunzipSync(await readFile(`${OUT}/terrain.bin.gz`))).buffer);
+  const water = new Uint8Array(await readFile(`${WORK}/water.u8`));
+  const wet = (x: number, y: number) => {
+    const i = Math.floor((x - X0) / MASK_M), j = Math.floor((Y1 - y) / MASK_M);
+    return i >= 0 && j >= 0 && i < MW && j < MH ? water[j * MW + i] > 127 : false;
+  };
+  const levelAt = (x: number, y: number) => {
+    const i = Math.round((x - terrain.x0) / terrain.dx), j = Math.round((y - terrain.y0) / terrain.dx);
+    // nearest water surface within a few cells (bridges cross channels narrower than the grid)
+    for (let r = 0; r <= 4; r++)
+      for (let b = -r; b <= r; b++)
+        for (let a = -r; a <= r; a++) {
+          const ii = i + a, jj = j + b;
+          if (ii < 0 || jj < 0 || ii >= terrain.nx || jj >= terrain.ny) continue;
+          const w = terrain.water[jj * terrain.nx + ii];
+          if (!Number.isNaN(w)) return w;
+        }
+    return groundAt(terrain, x, y);
+  };
+  const MAIN = /^(motorway|trunk|primary|secondary|tertiary)(_link)?$/;
+  const roads = (await loadLayer("roads", true)).elements;
+  const out: BuiltBridge[] = [];
+  for (const spec of BRIDGES) {
+    const ways = roads.filter((e) => e.geometry && e.tags?.bridge && e.tags.bridge !== "no" && MAIN.test(e.tags.highway ?? "") && (e.tags["bridge:name"] ?? e.tags.name) === spec.osm);
+    if (!ways.length) { log(`bridge not found: ${spec.osm}`); continue; }
+    const paths: BuiltBridge["paths"] = [];
+    for (const w of ways) {
+      // resample every ~15 m
+      const raw = w.geometry!.map(toXY);
+      const pts: Array<[number, number]> = [raw[0]];
+      for (let i = 1; i < raw.length; i++) {
+        const [ax, ay] = raw[i - 1], [bx, by] = raw[i], d = Math.hypot(bx - ax, by - ay), n = Math.max(1, Math.ceil(d / 15));
+        for (let k = 1; k <= n; k++) pts.push([ax + ((bx - ax) * k) / n, ay + ((by - ay) * k) / n]);
+      }
+      const isWet = pts.map(([x, y]) => wet(x, y));
+      // required deck height (scene units): clearance over water, just above ground on land
+      const req = pts.map(([x, y], i) => (isWet[i] ? levelAt(x, y) * EXZ + spec.clearance * BUILDING_EX : groundAt(terrain, x, y) * EXZ + 1.2));
+      // ramps: never steeper than 4.5 %, and never below what is needed
+      const deck = req.slice();
+      const ds = (i: number) => Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+      for (let i = 1; i < deck.length; i++) deck[i] = Math.max(deck[i], deck[i - 1] - 0.045 * ds(i));
+      for (let i = deck.length - 2; i >= 0; i--) deck[i] = Math.max(deck[i], deck[i + 1] - 0.045 * ds(i + 1));
+      const lanes = +(w.tags?.lanes ?? 2) || 2;
+      paths.push({ w: Math.round(lanes * 3.6 + 3), pts: pts.map(([x, y], i) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10, Math.round(deck[i] * 10) / 10, isWet[i] ? 1 : 0]) });
+    }
+    // the main span: in the longest path, the longest run over water
+    let main: BuiltBridge["main"] = null;
+    if (spec.kind !== "deck") {
+      const longest = paths.reduce((a, b) => (b.pts.length > a.pts.length ? b : a));
+      paths.splice(paths.indexOf(longest), 1);
+      paths.unshift(longest);
+      const p = longest.pts;
+      const dist = [0];
+      for (let i = 1; i < p.length; i++) dist.push(dist[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
+      let best = [0, -1], start = -1;
+      for (let i = 0; i <= p.length; i++) {
+        if (i < p.length && p[i][3]) { if (start < 0) start = i; }
+        else if (start >= 0) { if (dist[i - 1] - dist[start] > (best[1] >= 0 ? dist[best[1]] - dist[best[0]] : -1)) best = [start, i - 1]; start = -1; }
+      }
+      if (best[1] > best[0]) {
+        let a = dist[best[0]], b = dist[best[1]];
+        const len = b - a;
+        if (spec.kind === "cantilever" && len > 700) { const m = (a + b) / 2; a = m - 330; b = m + 330; }
+        if (spec.kind === "cablestayed") {
+          // the Seaway channel lies along the east (South Shore) bank
+          const eastEnd = p[best[1]][0] > p[best[0]][0];
+          const span = Math.min(len * 0.45, 520);
+          if (spec.osm.includes("Champlain")) { if (eastEnd) a = b - span; else b = a + span; }
+          else { const m = (a + b) / 2; a = m - span / 2; b = m + span / 2; }
+        }
+        const mid = (a + b) / 2;
+        const k = dist.findIndex((d) => d >= mid);
+        main = { a: Math.round(a), b: Math.round(b), x: p[k][0], y: p[k][1], deck: p[k][2] };
+      }
+    }
+    out.push({ name: spec.name, kind: spec.kind, famous: !!spec.famous, blurb: spec.blurb ?? "", clearance: spec.clearance, paths, main });
+  }
+  await writeFile(`${OUT}/bridges.json`, JSON.stringify(out));
+  log(`bridges.json: ${out.length} bridges, ${out.reduce((s, b) => s + b.paths.length, 0)} carriageways`);
+}
+
 async function main() {
   await mkdir(OUT, { recursive: true });
   log(`OSM source: ${osmSource()}`);
@@ -462,6 +547,7 @@ async function main() {
   const getDem = async () => (dem ??= await loadDem({ s: REGION.s - 0.01, w: REGION.w - 0.01, n: REGION.n + 0.01, e: REGION.e + 0.01 }, ".cache/dem"));
   if (only.has("terrain")) await buildTerrain(await getDem());
   if (only.has("buildings")) await buildBuildings(await getDem());
+  if (only.has("bridges")) await buildBridges();
   log("done");
 }
 

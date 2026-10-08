@@ -20,6 +20,7 @@ import { createCorridors, createTrips } from "./trips";
 import { createPulses } from "./pulses";
 import { createLabels } from "./labels";
 import { createLandmarks } from "./landmarks";
+import { createBridges } from "./bridges";
 import { LANDMARKS } from "@/lib/landmarks";
 
 /** [lat, lon, distance m, bearing the camera faces (° from true north), tilt from vertical °] */
@@ -176,10 +177,14 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
   const corridors = createCorridors(scene);
   const pulses = createPulses(scene, reduced);
   const landmarks = createLandmarks(scene, terrain, shared);
+  const bridges = await createBridges(scene, terrain, shared.uNight).catch((e) => { console.error("bridges", e); return null; });
   const labels = createLabels(
     host,
     terrain,
-    landmarks.placed.map((p) => ({ text: p.l.name, pos: new THREE.Vector3(p.pos.x, p.top + 14, p.pos.z), min: 0, max: 5200, cls: "landmark" })),
+    [
+      ...landmarks.placed.map((p) => ({ text: p.l.name, pos: new THREE.Vector3(p.pos.x, p.top + 14, p.pos.z), min: 0, max: 5200, cls: "landmark" })),
+      ...(bridges?.views ?? []).map((v) => ({ text: v.name, pos: new THREE.Vector3(v.x, v.deck + 60, -v.y), min: 0, max: 9000, cls: "landmark" })),
+    ],
   );
 
   // wire data as it arrives (live and history load independently)
@@ -304,6 +309,7 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     corridors.update(s.mode === "rhythm", now / 1000, camDist);
     pulses.update(now / 1000, stations, camDist);
     landmarks.update(now / 1000, shared.uNight.value);
+    bridges?.update(now / 1000);
     city.update(camera, controls.target, now);
     labels.update(camera, W, H, camDist);
 
@@ -330,6 +336,19 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
       flyState(st, 2000);
       idle = false;
     },
+    /** fly alongside a famous bridge, looking across its main span */
+    flyToBridge(name: string) {
+      const v = bridges?.views.find((b) => b.name === name);
+      if (!v) return;
+      const st = camState();
+      st.target = new THREE.Vector3(v.x, v.deck, -v.y);
+      st.r = 1300;
+      st.theta = ((v.along / RAD + 90 + 180) % 360) * RAD;
+      st.phi = 66 * RAD;
+      flyState(st, 2200);
+      idle = false;
+    },
+    get bridgeViews() { return bridges?.views ?? []; },
     zoom(f: number) { const st = camState(); st.r = clamp(st.r * f, controls.minDistance, controls.maxDistance); flyState(st, 600); },
     setBearing(b: number) { const st = camState(); st.theta = (b + 180) * RAD; flyState(st, 1200); },
     focus(sel: Sel) {

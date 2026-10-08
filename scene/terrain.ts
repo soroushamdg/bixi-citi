@@ -210,19 +210,24 @@ export function createWater(t: Terrain, shared: Shared) {
         float g = vFlow.z;
         float spd = smoothstep(.0003, .005, g);
         vec2 dir = g > 1e-6 ? vFlow.xy / g : vec2(.6, -.8);
-        vec2 perp = vec2(-dir.y, dir.x);
-        // lakes drift with the wind, rivers run downhill
-        vec2 adv = dir * uTime * (.04 + 1.4 * spd) + vec2(.011, .017) * uTime;
         vec2 P = vW.xz;
+        // flow map: two phases of bounded advection blended so offsets never grow,
+        // which keeps the surface from shearing where the current turns
+        float T = .045, ph0 = fract(uTime * T), ph1 = fract(uTime * T + .5);
+        float reach = 30. + 140. * spd;
+        vec2 o0 = dir * ph0 * reach, o1 = dir * ph1 * reach;
+        vec2 wind = vec2(.011, .017) * uTime;
+        float wgt = abs(ph0 - .5) * 2.;
         float e = 5.;
-        float h0 = wH(P, adv, spd), hx = wH(P + vec2(e, 0.), adv, spd), hz = wH(P + vec2(0., e), adv, spd);
-        float k = 2.2 + 7. * spd;
+        #define WH(p) mix(wH((p) - o0, wind, spd), wH((p) - o1 + 41.3, wind, spd), wgt)
+        float h0 = WH(P), hx = WH(P + vec2(e, 0.)), hz = WH(P + vec2(0., e));
+        float k = 2.2 + 2.5 * spd;
         vec3 nW = normalize(vec3(-(hx - h0) / e * k, 1., -(hz - h0) / e * k));
         normal = normalize((viewMatrix * vec4(nW, 0.)).xyz);
-        // long streaks that travel with the current
-        vec2 q = vec2(dot(P, dir) * .004, dot(P, perp) * .03);
-        float streak = smoothstep(.35, .95, snoise(q - vec2(uTime * (.05 + .9 * spd), 0.)));
-        float foam = smoothstep(.65, .98, spd) * smoothstep(.1, .7, h0 + .3);
+        // soft streaks carried by the same flow
+        float streak = smoothstep(.4, .95, mix(snoise((P - o0) * .006), snoise((P - o1) * .006 + 17.1), wgt));
+        // white water only on real rapids, in soft patches that drift downstream
+        float foam = smoothstep(.75, 1., spd) * smoothstep(.2, .85, mix(snoise((P - o0) * .0045), snoise((P - o1) * .0045 + 5.3), wgt) * .5 + .5);
         float shore = 1. - smoothstep(.5, .6, wet);`,
       )
       .replace(
@@ -233,8 +238,8 @@ export function createWater(t: Terrain, shared: Shared) {
         float day = 1. - uNight;
         // the sky, mirrored at grazing angles and broken up by the ripples
         totalEmissiveRadiance += uHorizon * (.025 + .32 * fres) * (.35 + .65 * day);
-        totalEmissiveRadiance += uHorizon * streak * (.035 + .06 * spd) * day;
-        totalEmissiveRadiance += vec3(.8, .87, .9) * (foam * .45 + shore * .05) * (.3 + .7 * day);`,
+        totalEmissiveRadiance += uHorizon * streak * (.035 + .03 * spd) * day;
+        totalEmissiveRadiance += vec3(.8, .87, .9) * (foam * .22 + shore * .05) * (.3 + .7 * day);`,
       );
   };
   const mesh = new THREE.Mesh(g, mat);

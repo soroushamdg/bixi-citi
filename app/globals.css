@@ -303,7 +303,8 @@ input[type=range]:disabled{opacity:.45}
 .month-ticks span{position:absolute;top:0;transform:translateX(-50%)}
 .lbl.landmark{font:500 10px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#ffd9c4;padding:4px 7px;border-radius:999px;background:rgba(20,22,28,.6);box-shadow:0 0 0 1px rgba(226,75,63,.35)}
 .places{top:18px;right:72px;width:min(330px,calc(100% - 100px));max-height:calc(100% - 90px);overflow:auto;padding:14px 10px 10px;z-index:4}
-.places .label{display:block;padding:0 8px 8px}
+.places .label{display:block;padding:10px 8px 8px}
+.places .label:first-child{padding-top:0}
 .places ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
 .places button{display:grid;gap:3px;width:100%;text-align:left;padding:8px 10px;border-radius:12px;color:var(--ink-2)}
 .places button:hover,.places button:focus-visible{box-shadow:var(--raise-sm);color:var(--ink)}
