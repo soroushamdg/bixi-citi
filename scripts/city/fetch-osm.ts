@@ -16,15 +16,12 @@ async function main() {
     .sort((a, b) => Math.hypot((a.s + a.n) / 2 - centre.lat, ((a.w + a.e) / 2 - centre.lon) * 0.7) - Math.hypot((b.s + b.n) / 2 - centre.lat, ((b.w + b.e) / 2 - centre.lon) * 0.7));
   let done = tiles.length - todo.length;
   log(`${done}/${tiles.length} tiles cached`);
-  // two requests in flight: polite to a 4-slot public server
-  await Promise.all(
-    [0, 1].map(async () => {
-      for (let t = todo.shift(); t; t = todo.shift()) {
-        const els = await fetchTile(t);
-        log(`${++done}/${tiles.length} ${t.key}: ${els.length}`);
-      }
-    }),
-  );
+  // one request at a time with a pause: a public server banned us once for less
+  for (let t = todo.shift(); t; t = todo.shift()) {
+    const els = await fetchTile(t);
+    log(`${++done}/${tiles.length} ${t.key}: ${els.length}`);
+    await new Promise((r) => setTimeout(r, 2000));
+  }
   log("done");
 }
 
