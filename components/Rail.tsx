@@ -66,6 +66,47 @@ function LivePanel() {
   );
 }
 
+/** The story day's busiest origins and destinations in the current hour. */
+function BusyDocks() {
+  const day = useData((d) => d.day);
+  const hist = useData((d) => d.hist);
+  const hour = useUI((s) => Math.floor(s.minute / 60) % 24);
+  const top = useMemo(() => {
+    if (!hist) return null;
+    const from = new Map<number, number>(), to = new Map<number, number>();
+    for (const c of day) {
+      if (!c) continue;
+      for (let i = 0; i < c.start.length; i++) {
+        if (Math.floor(c.start[i] / 3600) !== hour) continue;
+        from.set(c.from[i], (from.get(c.from[i]) ?? 0) + 1);
+        to.set(c.to[i], (to.get(c.to[i]) ?? 0) + 1);
+      }
+    }
+    const best = (m: Map<number, number>) => [...m].sort((a, b) => b[1] - a[1]).slice(0, 3);
+    return { from: best(from), to: best(to) };
+  }, [day, hist, hour]);
+  if (!top || !hist) return null;
+  const h = String(hour).padStart(2, "0");
+  const item = ([i, n]: [number, number], kind: "from" | "to") => (
+    <li key={kind + i}>
+      <button onClick={() => focus({ set: "hist", i })}>
+        <span className="nm"><span className="sw" style={{ background: kind === "from" ? "var(--out)" : "var(--in)" }} />{hist.name[i]}</span>
+        <span className="ct">{n}</span>
+      </button>
+    </li>
+  );
+  return (
+    <div className="well">
+      <div className="well-head"><span className="label">Busiest docks {h}:00 <Chip kind="real" /></span><span className="v">rides</span></div>
+      <ul className="list busy">
+        {top.from.map((e) => item(e, "from"))}
+        {top.to.map((e) => item(e, "to"))}
+        {!top.from.length && <li className="label">Loading this hour…</li>}
+      </ul>
+    </div>
+  );
+}
+
 function FlowsPanel() {
   const meta = useData((d) => d.meta);
   const date = meta ? storyDateLong(meta) : "";
@@ -87,10 +128,11 @@ function FlowsPanel() {
         <TripsPerHour label={shortDate} />
       </div>
       <div className="stats">
-        <div className="stat"><b>{meta ? fmt.format(meta.storyDay.trips) : "…"}</b><span>Trips that day</span></div>
+        <div className="stat"><b>{meta ? fmt.format(meta.storyDay.trips) : "…"}</b><span>Rides that day</span></div>
         <div className="stat"><b>{meta ? `${Math.round(meta.medianMin)} min` : "…"}</b><span>Median ride</span></div>
         <div className="stat" title="Of rides that ended more than 2 m higher or lower than they started, over the season"><b>{meta ? `${Math.round(meta.downhill * 100)}%` : "…"}</b><span>End downhill</span></div>
       </div>
+      <BusyDocks />
     </section>
   );
 }
@@ -162,7 +204,7 @@ function StationsPanel() {
         </div>
       )}
       <div className="well chart">
-        <div className="well-head"><span className="label">Net bikes per day <Chip kind="avg" /></span><span className="v">loses ← → gains</span></div>
+        <div className="well-head"><span className="label">Net bikes per day <Chip kind="avg" /></span><span className="v">lose · gain</span></div>
         <NetStations />
       </div>
     </section>

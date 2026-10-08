@@ -5,6 +5,7 @@ import { ui, useData, useUI } from "@/lib/store";
 import { scrubTo } from "@/lib/story-controller";
 import { hideTip, row, showTip, title } from "@/lib/tip";
 import { INK2, INK3, LED, MONO, RAMP, fmt, pad } from "./common";
+import { SrTable } from "./SrTable";
 
 const CW = 12.33, CH = 16, X0 = 32, Y0 = 4;
 
@@ -22,6 +23,12 @@ export function Heatmap() {
   if (!rhythm || !stats) return <div className="chart-empty label">Loading rhythm…</div>;
   const yb = Y0 + 7 * (CH + 3) + 10;
   return (
+    <>
+    <SrTable
+      caption="Average trips per hour of the week"
+      head={["Day", ...Array.from({ length: 24 }, (_, h) => `${pad(h)}h`)]}
+      rows={DAYS.map((name, d) => [name, ...Array.from({ length: 24 }, (_, h) => fmt.format(Math.round(rhythm.how[d * 24 + h])))])}
+    />
     <svg
       viewBox={`0 0 330 ${Y0 + 7 * (CH + 3) + 40}`}
       role="img"
@@ -61,6 +68,7 @@ export function Heatmap() {
       {RAMP.map((c, k) => <rect key={c} x={X0 + k * 16} y={yb + 10} width={14} height={7} rx={2} fill={c} />)}
       <text x={X0 + 8 * 16 + 6} y={yb + 16.5} fill={INK3} fontFamily={MONO} fontSize="8.5">fewer → more trips</text>
     </svg>
+    </>
   );
 }
 

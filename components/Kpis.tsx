@@ -65,7 +65,7 @@ export function Kpis() {
     const since = (activity[activity.length - 1]?.to ?? 0) - 300;
     const recent = activity.filter((a) => a.to >= since);
     const n = recent.reduce((s, a) => s + a.left + a.docked, 0);
-    dyn = { label: "Moves · 5 min", chip: "live", value: recent.length ? fmt.format(n) : "…", sub: recent.length ? "bikes taken or returned, trucks excluded" : "measuring between snapshots" };
+    dyn = { label: "Moves · 5 min", chip: "live", value: recent.length ? fmt.format(n) : "…", sub: recent.length ? "taken or returned, trucks excluded" : "measuring between snapshots" };
   } else if (mode === "flows") {
     const riding = ridingAt(day, minute);
     const hourTrips = startedBetween(day, Math.floor(minute / 60) * 60, Math.floor(minute / 60) * 60 + 60);
@@ -75,7 +75,7 @@ export function Kpis() {
     const v = rhythm ? rhythm.how[wd * 24 + h] : 0;
     dyn = { label: "This hour", chip: "avg", value: rhythm ? fmt.format(Math.round(v / 10) * 10) : "…", small: "trips", sub: `average ${DAYS[wd]} ${pad(h)}:00 to ${pad((h + 1) % 24)}:00` };
   } else {
-    dyn = { label: "Bikes to rebalance", chip: "avg", value: meta ? fmt.format(Math.round(meta.pile.haulPerDay / 10) * 10) : "…", sub: "per day, net drift between stations" };
+    dyn = { label: "To rebalance", chip: "avg", value: meta ? fmt.format(Math.round(meta.pile.haulPerDay / 10) * 10) : "…", sub: "per day, net drift between stations" };
   }
 
   return (

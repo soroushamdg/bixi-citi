@@ -80,7 +80,7 @@ export async function fetchUpstream<T>(feed: "station_status" | "station_informa
   const res = await fetch(`${GBFS_ROOT}/${feed}.json`, {
     cache: "no-store",
     headers: { "User-Agent": "bixi-story (unofficial portfolio dashboard)" },
-    signal: AbortSignal.timeout(8000),
+    signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) throw new Error(`GBFS ${feed}: HTTP ${res.status}`);
   return (await res.json()) as T;

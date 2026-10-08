@@ -4,6 +4,7 @@ import { ui, useData } from "@/lib/store";
 import { getScene } from "@/lib/story-controller";
 import { hideTip, row, showTip, title } from "@/lib/tip";
 import { IN, INK, INK2, INK3, MONO, OUT, signed } from "./common";
+import { SrTable } from "./SrTable";
 
 const RH = 21, CX = 238, HW = 70;
 
@@ -22,6 +23,8 @@ export function NetStations() {
     getScene()?.focus({ set: "hist", i });
   };
   return (
+    <>
+    <SrTable caption="Average net bikes per day" head={["Station", "Net per day", "Elevation (m)"]} rows={rows.map((i) => [hist.name[i], signed(hist.net[i]), Math.round(hist.elev[i])])} />
     <svg viewBox={`0 0 330 ${rows.length * RH + 18}`} role="img" aria-label="Stations that lose and gain the most bikes on an average day" onPointerLeave={() => { hideTip(); ui.setState({ hover: null }); }}>
       {rows.map((i, k) => {
         const y = k * RH + (k >= 6 ? 12 : 0), v = hist.net[i], w = (Math.abs(v) / mx) * HW;
@@ -54,5 +57,6 @@ export function NetStations() {
       })}
       <line x1={CX} x2={CX} y1={0} y2={rows.length * RH + 12} stroke={INK3} strokeOpacity=".6" />
     </svg>
+    </>
   );
 }

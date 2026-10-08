@@ -4,6 +4,7 @@ import { useData, useUI } from "@/lib/store";
 import { scrubTo } from "@/lib/story-controller";
 import { hideTip, row, showTip, title } from "@/lib/tip";
 import { INK3, LED, MONO, OUT, fmt, hhmm, pad, svgX } from "./common";
+import { SrTable } from "./SrTable";
 
 const X0 = 34, X1 = 326, Y0 = 10, Y1 = 100, VB = 330;
 
@@ -70,6 +71,15 @@ export function TripsPerHour({ label }: { label: string }) {
         <circle cx={px} cy={py} r="4" fill={LED} stroke="#1c2029" strokeWidth="2" />
         <rect x={X0} y={0} width={X1 - X0} height={Y1 + 6} fill="transparent" />
       </svg>
+      <SrTable
+        caption={`Rides per hour, ${label} and the average weekday`}
+        head={["Hour", label, "Average weekday"]}
+        rows={Array.from({ length: 24 }, (_, h) => [
+          `${pad(h)}:00`,
+          fmt.format(Math.round(rhythm.story.slice(h * 6, h * 6 + 6).reduce((a, b) => a + b, 0) / 6)),
+          fmt.format(Math.round(rhythm.curveWd.slice(h * 6, h * 6 + 6).reduce((a, b) => a + b, 0) / 6)),
+        ])}
+      />
       <div className="legend-inline">
         <span><i style={{ background: OUT }} />{label}</span>
         <span><i className="dash" />Average weekday</span>
