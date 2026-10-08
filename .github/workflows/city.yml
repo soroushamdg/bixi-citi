@@ -1,6 +1,8 @@
 # Rebuild the city geometry from OpenStreetMap + AWS Terrain Tiles.
-# Public Overpass servers are busy, so the OSM cache is kept between runs
-# and the fetch resumes where it stopped. Run by hand, or quarterly.
+# Overpass is tried first, within a time budget; the tile cache is kept
+# between runs so the fetch resumes where it stopped. If the cache is still
+# incomplete, the build falls back to BBBike's regional .osm.pbf extract.
+# Run by hand, or quarterly.
 name: City geometry
 
 on:
@@ -33,13 +35,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            .cache/osm
+            .cache/osm/all
             .cache/dem
           key: city-cache-${{ github.run_id }}
           restore-keys: city-cache-
 
-      - name: Fetch OpenStreetMap
-        run: npm run city:fetch
+      - name: Fetch OpenStreetMap (Overpass, up to 3 h)
+        run: timeout 3h npm run city:fetch || echo "Overpass incomplete; the build will use the PBF extract"
 
       - name: Build assets
         run: npm run city:build

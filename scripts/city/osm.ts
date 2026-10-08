@@ -97,8 +97,28 @@ export function tileCached(t: ReturnType<typeof fetchTiles>[number]) {
   return existsSync(`${CACHE}/all/${t.key}.json.gz`) || existsSync(`${CACHE}/all/${t.key}.split`);
 }
 
+/**
+ * Where the build reads OSM from. Overpass is the primary source; when its
+ * tile cache is incomplete (busy or unreachable servers), the regional PBF
+ * extract stands in. OSM_SOURCE=overpass|pbf forces one.
+ */
+export function osmSource(): "overpass" | "pbf" {
+  const forced = process.env.OSM_SOURCE;
+  if (forced === "overpass" || forced === "pbf") return forced;
+  return fetchTiles().every(tileCached) ? "overpass" : "pbf";
+}
+
+let pbfAll: Promise<OsmElement[]> | null = null;
+const anyLayer = (t: Record<string, string>) => Object.values(LAYER_TEST).some((f) => f(t));
+
 /** Every element of a layer over the whole region, deduplicated across tiles. */
 export async function loadLayer(layer: Layer, onlyCached = false): Promise<{ elements: OsmElement[]; missing: number }> {
+  if (osmSource() === "pbf") {
+    const { loadPbf } = await import("./pbf");
+    pbfAll ??= loadPbf(anyLayer);
+    const test = LAYER_TEST[layer];
+    return { elements: (await pbfAll).filter((el) => test(el.tags ?? {})), missing: 0 };
+  }
   const seen = new Set<string>();
   const elements: OsmElement[] = [];
   const test = LAYER_TEST[layer];

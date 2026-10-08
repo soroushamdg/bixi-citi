@@ -8,10 +8,7 @@
  *   Uint16 ringPts [nRings]                             (padded to 4 bytes)
  *   Int16 coords [nPts * 2], 0.25 m units, delta-coded within each ring, first point relative to origin
  *
- * blocks.bin.gz  the far LOD: one box per 62.5 m grid cell with buildings
- *   Int32 magic 'BXBK', count
- *   Float32 x [count] · Float32 y [count] · Uint16 size dm [count] · Uint16 height dm [count]
- *   Int16 base dm [count] · Uint16 tile [count]
+ * blocks.bin.gz  the far LOD: one box per 62.5 m grid cell with buildings (layout below)
  */
 export const TILE_MAGIC = 0x54435842;
 export const BLOCK_MAGIC = 0x4b425842;
@@ -117,32 +114,45 @@ export interface Blocks {
   tile: Uint16Array;
 }
 
+/*
+ * v2 layout: Int32 magic, count, version, 0 · Float32 ox, oy (origin, metres)
+ *   Uint16 x m [n] · Uint16 y m [n] · Uint16 height dm [n] · Int16 base dm [n] · Uint16 tile [n] · Uint8 size (¼ m) [n]
+ * Blocks are sorted by tile so the tile column compresses to almost nothing.
+ */
 export function encodeBlocks(b: { x: number[]; y: number[]; size: number[]; height: number[]; base: number[]; tile: number[] }): Uint8Array {
   const n = b.x.length;
-  const off = [8, 8 + n * 4, 8 + n * 8, 8 + n * 8 + pad4(n * 2), 8 + n * 8 + 2 * pad4(n * 2), 8 + n * 8 + 3 * pad4(n * 2)];
-  const buf = new ArrayBuffer(off[5] + pad4(n * 2));
-  new Int32Array(buf, 0, 2).set([BLOCK_MAGIC, n]);
-  new Float32Array(buf, off[0], n).set(b.x);
-  new Float32Array(buf, off[1], n).set(b.y);
-  new Uint16Array(buf, off[2], n).set(b.size.map((v) => Math.round(v * 10)));
-  new Uint16Array(buf, off[3], n).set(b.height.map((v) => Math.min(65535, Math.round(v * 10))));
-  new Int16Array(buf, off[4], n).set(b.base.map((v) => Math.round(v * 10)));
-  new Uint16Array(buf, off[5], n).set(b.tile);
+  const order = b.x.map((_, i) => i).sort((p, q) => b.tile[p] - b.tile[q] || b.y[p] - b.y[q] || b.x[p] - b.x[q]);
+  const ox = Math.floor(b.x.reduce((m, v) => Math.min(m, v), Infinity)), oy = Math.floor(b.y.reduce((m, v) => Math.min(m, v), Infinity));
+  const off = (k: number) => 24 + k * pad4(n * 2);
+  const buf = new ArrayBuffer(off(5) + pad4(n));
+  new Int32Array(buf, 0, 4).set([BLOCK_MAGIC, n, 2, 0]);
+  new Float32Array(buf, 16, 2).set([ox, oy]);
+  const X = new Uint16Array(buf, off(0), n), Y = new Uint16Array(buf, off(1), n), H = new Uint16Array(buf, off(2), n);
+  const B = new Int16Array(buf, off(3), n), T = new Uint16Array(buf, off(4), n), S = new Uint8Array(buf, off(5), n);
+  order.forEach((i, k) => {
+    X[k] = Math.round(b.x[i] - ox);
+    Y[k] = Math.round(b.y[i] - oy);
+    H[k] = Math.min(65535, Math.round(b.height[i] * 10));
+    B[k] = Math.round(b.base[i] * 10);
+    T[k] = b.tile[i];
+    S[k] = Math.min(255, Math.round(b.size[i] * 4));
+  });
   return new Uint8Array(buf);
 }
 
 export function decodeBlocks(buf: ArrayBuffer): Blocks {
-  const [magic, n] = new Int32Array(buf, 0, 2);
-  if (magic !== BLOCK_MAGIC) throw new Error("not a blocks file");
-  const off = [8, 8 + n * 4, 8 + n * 8, 8 + n * 8 + pad4(n * 2), 8 + n * 8 + 2 * pad4(n * 2), 8 + n * 8 + 3 * pad4(n * 2)];
+  const [magic, n, version] = new Int32Array(buf, 0, 3);
+  if (magic !== BLOCK_MAGIC || version !== 2) throw new Error("not a v2 blocks file");
+  const [ox, oy] = new Float32Array(buf, 16, 2);
+  const off = (k: number) => 24 + k * pad4(n * 2);
   return {
     count: n,
-    x: new Float32Array(buf, off[0], n),
-    y: new Float32Array(buf, off[1], n),
-    size: Float32Array.from(new Uint16Array(buf, off[2], n), (v) => v / 10),
-    height: Float32Array.from(new Uint16Array(buf, off[3], n), (v) => v / 10),
-    base: Float32Array.from(new Int16Array(buf, off[4], n), (v) => v / 10),
-    tile: new Uint16Array(buf, off[5], n),
+    x: Float32Array.from(new Uint16Array(buf, off(0), n), (v) => v + ox),
+    y: Float32Array.from(new Uint16Array(buf, off(1), n), (v) => v + oy),
+    height: Float32Array.from(new Uint16Array(buf, off(2), n), (v) => v / 10),
+    base: Float32Array.from(new Int16Array(buf, off(3), n), (v) => v / 10),
+    tile: new Uint16Array(buf, off(4), n),
+    size: Float32Array.from(new Uint8Array(buf, off(5), n), (v) => v / 4),
   };
 }
 
@@ -155,7 +165,7 @@ export interface CityIndex {
   tile: number;
   block: number;
   /** ground texture: size in px, metres per px; its top-left is (bounds.x0, bounds.y1) */
-  mask: { file: string; width: number; height: number; m: number };
+  mask: { file: string; bikes: string; width: number; height: number; m: number };
   terrain: { file: string };
   blocks: { file: string; count: number };
   /** u, v grid tile coords, world centre, buildings, tallest (m), gz bytes */

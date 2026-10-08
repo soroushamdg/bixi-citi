@@ -4,7 +4,8 @@
  *   npx tsx scripts/city/build-city.ts [--only mask,terrain,buildings]
  *
  * Outputs (public/city/):
- *   mask.png         RGBA ground texture over the region: R land, G green, B streets, A bike network
+ *   ground.webp      ground texture over the region: R land, G green, B streets (lossless)
+ *   bikes.webp       the bike network, same grid
  *   terrain.bin.gz   real DEM grid + water surface (lib/formats/terrain.ts)
  *   blocks.bin.gz    far LOD, one box per 62.5 m street-grid cell (lib/formats/city.ts)
  *   tiles/*.bin.gz   near LOD, detailed footprints per 1 km street-grid tile
@@ -13,7 +14,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { gzipSync } from "node:zlib";
-import { PNG } from "pngjs";
+import sharp from "sharp";
 import {
   BLOCK, BLOCKS_PER_TILE, GRID_BEARING, KX, KY, LAT0, LON0, REGION, TILE, fromGrid, project, toGrid,
 } from "../../lib/geo";
@@ -22,7 +23,7 @@ import { KIND, encodeBlocks, encodeTile, type CityIndex, type TileBuilding } fro
 import { loadDem, type Dem } from "../lib/dem";
 import type { OsmElement, OsmGeomPoint } from "../lib/overpass";
 import { assembleRings, centroid, cleanRing, pointInRing, ringArea, simplifyRing, type Ring } from "./geom";
-import { fetchTiles, loadLayer, tileCached } from "./osm";
+import { loadLayer, osmSource } from "./osm";
 
 const OUT = "public/city";
 const WORK = ".cache/city";
@@ -151,10 +152,9 @@ async function buildMask() {
   const greenLayer = downsample(hi);
   log(`green polygons: ${nGreen}`);
 
-  // streets and bike network (only if every road tile is cached)
-  const roadsReady = fetchTiles().every((t) => tileCached(t));
+  // streets and the bike network
   let streetLayer: Uint8Array = new Uint8Array(MW * MH), cycleLayer: Uint8Array = new Uint8Array(MW * MH), nRoads = 0;
-  if (roadsReady) {
+  {
     const streets = new Uint8Array(HW * HH), cycles = new Uint8Array(HW * HH);
     const W: Record<string, [number, number]> = {
       motorway: [24, 255], trunk: [20, 245], motorway_link: [10, 200], trunk_link: [10, 200], primary: [15, 235], primary_link: [9, 200],
@@ -174,23 +174,27 @@ async function buildMask() {
     streetLayer = downsample(streets);
     cycleLayer = downsample(cycles);
     log(`roads: ${nRoads}`);
-  } else log("roads: not fully cached yet, skipped");
+  }
 
   await mkdir(WORK, { recursive: true });
   await writeFile(`${WORK}/water.u8`, waterLayer);
   await writeFile(`${WORK}/mask.json`, JSON.stringify({ water: nWater, green: nGreen, roads: nRoads }));
 
-  const png = new PNG({ width: MW, height: MH, colorType: 6 });
+  // Two opaque lossless WebPs (no alpha: browsers may premultiply it and wipe the colour channels)
+  const ground = Buffer.alloc(MW * MH * 3), bikes = Buffer.alloc(MW * MH * 3);
   for (let k = 0; k < MW * MH; k++) {
-    png.data[k * 4] = 255 - waterLayer[k];
-    png.data[k * 4 + 1] = greenLayer[k];
-    png.data[k * 4 + 2] = streetLayer[k];
-    png.data[k * 4 + 3] = cycleLayer[k];
+    ground[k * 3] = 255 - waterLayer[k];
+    ground[k * 3 + 1] = greenLayer[k];
+    ground[k * 3 + 2] = streetLayer[k];
+    bikes[k * 3] = bikes[k * 3 + 1] = bikes[k * 3 + 2] = cycleLayer[k];
   }
-  const buf = PNG.sync.write(png, { deflateLevel: 9, colorType: 6 });
   await mkdir(OUT, { recursive: true });
-  await writeFile(`${OUT}/mask.png`, buf);
-  log(`mask.png ${(buf.length / 1e6).toFixed(2)} MB`);
+  await rm(`${OUT}/mask.png`, { force: true });
+  for (const [name, raw] of [["ground.webp", ground], ["bikes.webp", bikes]] as const) {
+    const buf = await sharp(raw, { raw: { width: MW, height: MH, channels: 3 }, limitInputPixels: false }).webp({ lossless: true, exact: true, effort: 6 }).toBuffer();
+    await writeFile(`${OUT}/${name}`, buf);
+    log(`${name} ${(buf.length / 1e6).toFixed(2)} MB`);
+  }
 }
 
 /* ---------- terrain + water surface ---------- */
@@ -412,7 +416,7 @@ async function buildBuildings(dem: Dem) {
     gridBearing: GRID_BEARING,
     tile: TILE,
     block: BLOCK,
-    mask: { file: "mask.png", width: MW, height: MH, m: MASK_M },
+    mask: { file: "ground.webp", bikes: "bikes.webp", width: MW, height: MH, m: MASK_M },
     terrain: { file: "terrain.bin.gz" },
     blocks: { file: "blocks.bin.gz", count: bx.length },
     tiles: index,
@@ -424,6 +428,7 @@ async function buildBuildings(dem: Dem) {
 
 async function main() {
   await mkdir(OUT, { recursive: true });
+  log(`OSM source: ${osmSource()}`);
   if (only.has("mask")) await buildMask();
   let dem: Dem | null = null;
   const getDem = async () => (dem ??= await loadDem({ s: REGION.s - 0.01, w: REGION.w - 0.01, n: REGION.n + 0.01, e: REGION.e + 0.01 }, ".cache/dem"));
