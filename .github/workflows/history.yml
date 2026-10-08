@@ -1,0 +1,72 @@
+# Daily: look for a newer BIXI trip-history zip and, only when it changed,
+# download it here (cdn.bixi.com blocks browsers, and Vercel functions must
+# never process it), aggregate it, and commit the compact outputs.
+# The push to main triggers a Vercel deploy.
+name: History data
+
+on:
+  schedule:
+    - cron: "23 9 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if the zip did not change
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: history-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Find the newest yearly zip
+        id: latest
+        run: npx tsx scripts/history/latest.ts ${{ inputs.force && '--force' || '' }}
+
+      - name: Download
+        if: steps.latest.outputs.changed == 'true'
+        run: |
+          mkdir -p .cache/history
+          curl -fL --retry 5 --retry-delay 30 --retry-all-errors \
+            -A "Mozilla/5.0 (bixi-story CI; +https://github.com/${{ github.repository }})" \
+            -o ".cache/history/${{ steps.latest.outputs.file }}" "${{ steps.latest.outputs.url }}"
+          ls -la .cache/history
+
+      - name: Aggregate
+        if: steps.latest.outputs.changed == 'true'
+        run: |
+          set +e
+          npm run history:aggregate -- \
+            --zip ".cache/history/${{ steps.latest.outputs.file }}" \
+            --url "${{ steps.latest.outputs.url }}" \
+            --etag '${{ steps.latest.outputs.etag }}' \
+            --last-modified "${{ steps.latest.outputs.last_modified }}"
+          code=$?
+          # 3 = the new file has no complete riding-season month yet: keep the current data
+          if [ $code -ne 0 ] && [ $code -ne 3 ]; then exit $code; fi
+
+      - name: Commit
+        if: steps.latest.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data/history
+          if git diff --cached --quiet; then echo "No data change"; exit 0; fi
+          git commit -m "data: trip history from ${{ steps.latest.outputs.file }}"
+          git push
