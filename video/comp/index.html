@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BIXI Story — showreel composition</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="stage"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- chromatic split for hard cuts -->
+    <filter id="rgb" x="-2%" y="-2%" width="104%" height="104%" color-interpolation-filters="sRGB">
+      <feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="r"/>
+      <feOffset in="r" id="rgbR" dx="0" dy="0" result="ro"/>
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="g"/>
+      <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="b"/>
+      <feOffset in="b" id="rgbB" dx="0" dy="0" result="bo"/>
+      <feBlend in="ro" in2="g" mode="screen" result="rg"/>
+      <feBlend in="rg" in2="bo" mode="screen"/>
+    </filter>
+    <!-- horizontal motion blur for whips -->
+    <filter id="xblurA" x="-10%" y="0" width="120%" height="100%"><feGaussianBlur id="xblurAg" stdDeviation="0 0"/></filter>
+    <filter id="xblurB" x="-10%" y="0" width="120%" height="100%"><feGaussianBlur id="xblurBg" stdDeviation="0 0"/></filter>
+  </defs>
+</svg>
+<script src="data.js"></script>
+<script type="module" src="comp.js"></script>
+</body>
+</html>

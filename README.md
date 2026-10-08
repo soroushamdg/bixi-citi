@@ -12,6 +12,12 @@ Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from
 
 Design & build: **Sora Bon (Soroush Bonab)** · [linktr.ee/soroucsh](https://linktr.ee/soroucsh)
 
+[![BIXI Story showreel: 30 seconds](video/poster.jpg)](video/bixi-story-showreel.mp4)
+
+**Showreel**: [video/bixi-story-showreel.mp4](video/bixi-story-showreel.mp4), 30 s at 1080p60. It is made from the app itself (see [video/](video/README.md)).
+
+Made for laptops and desktops. Phones get a short note asking to open it on a bigger screen, and load nothing else.
+
 > Unofficial and not affiliated with BIXI Montréal. Trip data: [BIXI open data](https://bixi.com/en/open-data/). Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). Elevation: [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/).
 
 ## How it works
