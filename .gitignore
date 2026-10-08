@@ -44,3 +44,5 @@ next-env.d.ts
 /.cache/
 # preview screenshots from scripts/dev/shot.mjs
 /.cache/shots/
+# showreel intermediates (frames, footage); the final mp4 and sources are committed
+/video/build/

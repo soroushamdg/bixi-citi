@@ -4,7 +4,7 @@ import { isPhone } from "@/lib/device";
 import { data, ui, useData, useUI, type Sel } from "@/lib/store";
 import { SAMPLE_PER_DAY } from "@/lib/formats/years";
 import { LANDMARKS } from "@/lib/landmarks";
-import { attachScene, getScene, play, resetView, showBridge, showLandmark, useStory } from "@/lib/story-controller";
+import { attachScene, getScene, play, resetView, selectYear, setMode, showBridge, showLandmark, useStory } from "@/lib/story-controller";
 import { BRIDGES } from "@/lib/bridges";
 import { HOME } from "@/lib/chapters";
 import { hideTip, row, showTip, title } from "@/lib/tip";
@@ -124,7 +124,7 @@ export function Basin() {
         if (disposed) { handle.dispose(); return; }
         attachScene(handle);
         // dev-only handle for scripted screenshots (scripts/dev/shot.mjs)
-        if (process.env.NODE_ENV !== "production") Object.assign(window, { __bixi: { scene: handle, ui, data } });
+        if (process.env.NODE_ENV !== "production") Object.assign(window, { __bixi: { scene: handle, ui, data, story: { setMode, selectYear } } });
       } catch (err) {
         console.error(err);
         ui.setState({ sceneStatus: "failed" });

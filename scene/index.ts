@@ -217,8 +217,12 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
   };
   syncData();
   const unsubData = data.subscribe(syncData);
+  // capture mode (video/): a virtual clock and an optional pinned sun
+  let manual = false, virtualNow = 0, sunOverride: number | null = null;
+  // pulses share the render clock, so they stay in step when the showreel drives time
+  const clock = () => (manual ? virtualNow : performance.now());
   const unsubPulse = onLivePulse((p) => {
-    if (ui.getState().mode === "live") pulses.add(p.index, p.kind === "dock", p.n, p.truck, performance.now() / 1000);
+    if (ui.getState().mode === "live") pulses.add(p.index, p.kind === "dock", p.n, p.truck, clock() / 1000);
   });
 
   setLoad(0.35, "Raising the city");
@@ -276,22 +280,25 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     return montrealMs(storyDate, s.minute);
   };
 
-  const frame = (now: number) => {
-    raf = requestAnimationFrame(frame);
-    if (!visible || document.hidden) { last = now; return; }
-    const dtMs = Math.min(100, now - last);
-    last = now;
+  /**
+   * One frame. `now` drives animation (ms); in capture mode it is a virtual clock
+   * so recorded footage is frame-exact, while tile streaming keeps real time.
+   */
+  const render = (now: number, dtMs: number, realNow: number) => {
     const s = ui.getState(), d = data.getState();
-    stepFlight(now);
-    controls.autoRotate = idle && s.chapter < 0 && !reduced && !s.playing;
-    controls.autoRotateSpeed = 0.22;
-    controls.update();
+    virtualNow = now;
+    if (!manual) {
+      stepFlight(now);
+      controls.autoRotate = idle && s.chapter < 0 && !reduced && !s.playing;
+      controls.autoRotateSpeed = 0.22;
+      controls.update();
+    }
     const camDist = camera.position.distanceTo(controls.target);
     const near = clamp(camDist / 250, 5, 120);
     if (Math.abs(camera.near - near) > near * 0.2) { camera.near = near; camera.updateProjectionMatrix(); }
 
     focus.copy(controls.target);
-    sky.apply(sunMs(s), focus, camDist * 0.9);
+    sky.apply(sunOverride ?? sunMs(s), focus, camDist * 0.9);
     shared.uTime.value = now / 1000;
     shared.uNight.value = sky.nightGlow();
     shared.uHorizon.value.copy(sky.horizon);
@@ -310,7 +317,7 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     pulses.update(now / 1000, stations, camDist);
     landmarks.update(now / 1000, shared.uNight.value);
     bridges?.update(now / 1000);
-    city.update(camera, controls.target, now);
+    city.update(camera, controls.target, realNow);
     labels.update(camera, W, H, camDist);
 
     const off = camera.position.clone().sub(controls.target);
@@ -318,6 +325,13 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     if (Math.abs(bearing - lastBearing) > 0.2) { lastBearing = bearing; hooks.onBearing(bearing); }
 
     composer.render();
+  };
+  const frame = (now: number) => {
+    raf = requestAnimationFrame(frame);
+    if (manual || !visible || document.hidden) { last = now; return; }
+    const dtMs = Math.min(100, now - last);
+    last = now;
+    render(now, dtMs, now);
     governor(dtMs);
   };
   raf = requestAnimationFrame(frame);
@@ -360,6 +374,26 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
       idle = false;
     },
     get quality() { return q; },
+    /**
+     * Frame-exact capture for the showreel (video/): stop the live loop, then
+     * render any moment from any camera on demand.
+     */
+    capture: {
+      begin(pixelRatio = 1) { manual = true; dpr = pixelRatio; renderer.setPixelRatio(dpr); resize(); },
+      end() { manual = false; sunOverride = null; },
+      /** pin the sun to a moment (epoch ms), or null to follow the mode again */
+      sun(ms: number | null) { sunOverride = ms; },
+      frame(tSec: number, view: View, lift = 0, dtMs = 1000 / 60) {
+        const st = viewToCam(view);
+        st.target.y += lift;
+        placeCam(st);
+        render(tSec * 1000, dtMs, performance.now());
+      },
+      /** detail tiles still loading or growing in (wait for false before saving a frame) */
+      get busy() { return city.stats.pending + city.stats.growing > 0; },
+      replan() { city.replan(); },
+      budget(n: number) { city.setBudget(n); },
+    },
     /** dev: raw access for debugging */
     get debug() { return { scene, camera, renderer, sky }; },
     /** dev: toggle post passes */

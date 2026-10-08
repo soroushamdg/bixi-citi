@@ -136,7 +136,7 @@ export async function createCity(scene: THREE.Scene, index: CityIndex, shared: S
   const resident = new Map<number, Resident>();
   const tileKey = (i: number) => `${index.tiles[i].u}_${index.tiles[i].v}`;
   const keyToIdx = new Map(index.tiles.map((t, i) => [`${t.u}_${t.v}`, i]));
-  const stats = { resident: 0, triangles: 0 };
+  const stats = { resident: 0, triangles: 0, pending: 0, growing: 0 };
 
   const onDone = (w: Worker) => (e: MessageEvent<TileGeometry & { error?: string }>) => {
     idle.push(w);
@@ -211,6 +211,7 @@ export async function createCity(scene: THREE.Scene, index: CityIndex, shared: S
       }
     }
     stats.resident = resident.size;
+    stats.pending = queue.length + pending.size;
   }
 
   let cityGrowStart = -1;
@@ -219,9 +220,11 @@ export async function createCity(scene: THREE.Scene, index: CityIndex, shared: S
     globalGrow.value = Math.min(1, (now - cityGrowStart) / 3200);
     if (now - lastPlan > 300) { lastPlan = now; plan(camera, target, now); }
     let dirty = false;
+    stats.growing = 0;
     for (const [i, r] of resident) {
       const k = Math.min(1, (now - r.born) / 1100);
       r.grow.value = k;
+      if (k < 1) stats.growing++;
       const h = Math.round(Math.min(1, k * 1.4) * 255);
       if (hiddenData[i] !== h) { hiddenData[i] = h; dirty = true; }
     }
@@ -234,6 +237,8 @@ export async function createCity(scene: THREE.Scene, index: CityIndex, shared: S
     stats,
     update,
     setBudget(n: number) { budget = n; },
+    /** plan on the next update instead of waiting for the 300 ms tick */
+    replan() { lastPlan = -Infinity; },
     dispose() {
       disposed = true;
       workers.forEach((w) => w.terminate());
