@@ -39,10 +39,12 @@ Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from
 
 The story day is the Tuesday, Wednesday or Thursday at the 90th percentile of weekday volume, skipping holidays. It's busy without being an outlier.
 
-**The city is real geometry.** `scripts/city/fetch-osm.ts` pulls buildings, water, parks, streets and bike lanes for Montréal, Laval and the South Shore. Public Overpass servers are often overloaded, so each query declares a 60 s budget over a small tile and starts on the main instance, falling back to mirrors. A tile that is too heavy gets split into quadrants, and every answer is cached in `.cache/osm`, so a rerun resumes where it stopped. `scripts/city/build-city.ts` then writes:
+**The city is real geometry.** `scripts/city/fetch-osm.ts` pulls buildings, water, parks, streets and bike lanes for Montréal, Laval and the South Shore from Overpass. Public Overpass servers are often overloaded, so each query declares a 60 s budget over a small tile and starts on the main instance, falling back to mirrors. A tile that is too heavy gets split into quadrants, and every answer is cached in `.cache/osm`, so a rerun resumes where it stopped.
+
+If the Overpass cache is still incomplete when the build runs, `scripts/city/pbf.ts` reads [BBBike's Montréal extract](https://download.bbbike.org/osm/bbbike/Montreal/) instead. It is the same OpenStreetMap data as a single `.osm.pbf`, decoded by a small reader into the same element shape. The committed geometry came from that extract, because Overpass refused connections during the first build. Set `OSM_SOURCE=overpass|pbf` to force one source. `scripts/city/build-city.ts` then writes:
 
 - `terrain.bin.gz`: a 60 m grid from AWS Terrain Tiles, with the water surface estimated from the DEM. The rapids keep their slope.
-- `mask.png`: a 10 m ground texture with land, parks, streets and the bike network as separate channels.
+- `ground.webp` + `bikes.webp`: 10 m lossless ground textures (land, parks, streets; bike network).
 - `blocks.bin.gz`: the far level of detail. It has one box per 62.5 m cell of Montréal's street grid (rotated 32°, the way Montréal's "north" is), so distant neighbourhoods still read as blocks.
 - `tiles/*.bin.gz`: detailed footprints, one file per 1 km grid tile. Heights come from OSM `height`/`building:levels`, and towers use their `building:part`s.
 
@@ -68,8 +70,8 @@ npm run typecheck && npm run lint
 Regenerate data locally (everything downloaded lands in the gitignored `.cache/`):
 
 ```bash
-npm run city:fetch                       # Overpass, resumable; slow when servers are busy
-npm run city:build                       # → public/city
+npm run city:fetch                       # Overpass, resumable; slow when servers are busy (optional)
+npm run city:build                       # → public/city (falls back to the PBF extract)
 npm run history:latest                   # which zip is newest?
 curl -L -A "Mozilla/5.0" -o .cache/history/latest.zip "<url from above>"
 npm run history:aggregate -- --zip .cache/history/latest.zip --url "<url>"

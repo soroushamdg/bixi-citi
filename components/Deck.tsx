@@ -110,7 +110,7 @@ export function Deck() {
         </div>
         <span className="chtitle">
           {chapter < 0 ? (
-            <><b>{chapters.length || 6} chapters</b>Press play for a real day in about two minutes</>
+            <><b>{chapters.length || 6} chapters</b>Press play for a real day in about 90 seconds</>
           ) : (
             <><b>{chapter + 1} / {chapters.length}</b>{chapters[chapter]?.title}</>
           )}

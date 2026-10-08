@@ -86,7 +86,7 @@ export function buildChapters(meta: HistoryMeta, hist: HistStations | null): Cha
       key: "pile", mode: "stations", t0: 1118, t1: 1118, view: [45.509, -73.572, 7000, MTLN, 52],
       tag: "Season", title: "Where bikes pile up",
       body: pile
-        ? `On an average day this season, ${fmt.format(meta.pile.losers)} stations lose more than two bikes and ${fmt.format(meta.pile.gainers)} gain more than two. The biggest losers sit in ${pile.loseBoro} at about ${pile.loseElev} m; the biggest gainers in ${pile.gainBoro} at about ${pile.gainElev} m. Trucks even out roughly ${fmt.format(meta.pile.haulPerDay)} bikes a day.`
+        ? `On an average day this season, ${fmt.format(meta.pile.losers)} stations lose more than two bikes and ${fmt.format(meta.pile.gainers)} gain more than two. The biggest losers sit in ${pile.loseBoro} at about ${pile.loseElev} m; the biggest gainers in ${pile.gainBoro} at about ${pile.gainElev} m. Trucks even out roughly ${fmt.format(Math.round(meta.pile.haulPerDay / 10) * 10)} bikes a day.`
         : `Amber pillars lose bikes over a day, teal ones gain them.`,
     },
   ];
