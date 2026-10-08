@@ -1,0 +1,233 @@
+import * as THREE from "three";
+import { EXZ } from "@/lib/geo";
+import { decodeTerrain, type Terrain } from "@/lib/formats/terrain";
+import type { CityIndex } from "@/lib/formats/city";
+import { fetchGz } from "@/lib/load";
+import { SNOISE } from "./glsl";
+import type { Quality } from "./quality";
+
+export interface Shared {
+  uTime: { value: number };
+  uNight: { value: number };
+  uHorizon: { value: THREE.Color };
+  uMask: { value: THREE.Texture | null };
+  /** world rect of the mask texture: x0, y0 (south), width, height in metres */
+  uMaskRect: { value: THREE.Vector4 };
+  uLed: { value: THREE.Color };
+  uCycleGlow: { value: number };
+}
+
+export async function loadMaskTexture(url: string, renderer: THREE.WebGLRenderer): Promise<THREE.Texture> {
+  const blob = await (await fetch(url)).blob();
+  // raw channels: no premultiplication or colour conversion, south at v = 0
+  const bmp = await createImageBitmap(blob, { imageOrientation: "flipY", premultiplyAlpha: "none", colorSpaceConversion: "none" });
+  const tex = new THREE.Texture(bmp);
+  tex.flipY = false;
+  tex.premultiplyAlpha = false;
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.generateMipmaps = true;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.needsUpdate = true;
+  return tex;
+}
+
+const MASK_GLSL = /* glsl */ `
+uniform sampler2D uMask;
+uniform vec4 uMaskRect;
+vec4 maskAt(vec3 w){ return texture2D(uMask, vec2((w.x - uMaskRect.x) / uMaskRect.z, (-w.z - uMaskRect.y) / uMaskRect.w)); }
+`;
+
+export function createTerrain(t: Terrain, shared: Shared, q: Quality) {
+  const S = q.terrainStride;
+  const nx = Math.floor((t.nx - 1) / S) + 1, ny = Math.floor((t.ny - 1) / S) + 1;
+  const pos = new Float32Array(nx * ny * 3);
+  for (let j = 0; j < ny; j++)
+    for (let i = 0; i < nx; i++) {
+      const k = (j * S) * t.nx + i * S, o = (j * nx + i) * 3;
+      pos[o] = t.x0 + i * S * t.dx;
+      pos[o + 1] = t.ground[k] * EXZ;
+      pos[o + 2] = -(t.y0 + j * S * t.dx);
+    }
+  const idx = new Uint32Array((nx - 1) * (ny - 1) * 6);
+  let p = 0;
+  for (let j = 0; j < ny - 1; j++)
+    for (let i = 0; i < nx - 1; i++) {
+      const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1;
+      idx[p++] = a; idx[p++] = b; idx[p++] = c; idx[p++] = b; idx[p++] = d; idx[p++] = c;
+    }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setIndex(new THREE.BufferAttribute(idx, 1));
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+
+  const mat = new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0 });
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, shared, {
+      cLand: { value: new THREE.Color("#30353c") }, cHigh: { value: new THREE.Color("#4a4c4e") },
+      cPark: { value: new THREE.Color("#34573a") }, cStreet: { value: new THREE.Color("#454a53") },
+      cBed: { value: new THREE.Color("#0a131b") }, cBike: { value: new THREE.Color("#6a5c45") },
+    });
+    sh.vertexShader = sh.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vW;")
+      .replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvW = (modelMatrix * vec4(transformed, 1.)).xyz;");
+    sh.fragmentShader = sh.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>\nvarying vec3 vW;${MASK_GLSL}uniform vec3 cLand,cHigh,cPark,cStreet,cBed,cBike,uLed;uniform float uNight,uCycleGlow;`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        /* glsl */ `#include <color_fragment>
+        vec4 m = maskAt(vW);
+        float hTrue = vW.y / ${EXZ.toFixed(2)};
+        vec3 c = mix(cLand, cHigh, smoothstep(60., 200., hTrue));
+        c = mix(c, cPark, m.g * 0.9);
+        c = mix(c, cStreet, m.b * 0.8);
+        c = mix(c, cBike, m.a * 0.55);
+        c = mix(cBed, c, smoothstep(.3, .6, m.r));
+        diffuseColor.rgb = c;
+        float bikeGlow = m.a * smoothstep(.3, .6, m.r);`,
+      )
+      .replace(
+        "#include <emissivemap_fragment>",
+        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uLed * bikeGlow * uCycleGlow * (0.15 + uNight * 0.9);",
+      );
+  };
+  const mesh = new THREE.Mesh(g, mat);
+  mesh.receiveShadow = true;
+  mesh.name = "terrain";
+
+  // a dark plinth so the region reads as a model sitting on the console
+  const x0 = t.x0, x1 = t.x0 + (t.nx - 1) * t.dx, y0 = t.y0, y1 = t.y0 + (t.ny - 1) * t.dx;
+  const skirt: number[] = [];
+  const edge = (i: number, j: number) => {
+    const k = (j * S) * t.nx + i * S;
+    return [t.x0 + i * S * t.dx, Math.max(t.ground[k], Number.isNaN(t.water[k]) ? -1e9 : t.water[k]) * EXZ, -(t.y0 + j * S * t.dx)];
+  };
+  const ring: Array<[number, number]> = [];
+  for (let i = 0; i < nx; i++) ring.push([i, 0]);
+  for (let j = 1; j < ny; j++) ring.push([nx - 1, j]);
+  for (let i = nx - 2; i >= 0; i--) ring.push([i, ny - 1]);
+  for (let j = ny - 2; j >= 0; j--) ring.push([0, j]);
+  ring.push(ring[0]);
+  const BOTTOM = -420;
+  for (let r = 0; r < ring.length - 1; r++) {
+    const a = edge(...ring[r]), b = edge(...ring[r + 1]);
+    skirt.push(a[0], a[1], a[2], a[0], BOTTOM, a[2], b[0], b[1], b[2], b[0], b[1], b[2], a[0], BOTTOM, a[2], b[0], BOTTOM, b[2]);
+  }
+  const sg = new THREE.BufferGeometry();
+  sg.setAttribute("position", new THREE.Float32BufferAttribute(skirt, 3));
+  sg.computeVertexNormals();
+  const skirtMesh = new THREE.Mesh(sg, new THREE.MeshStandardMaterial({ color: 0x171a21, roughness: 0.95, side: THREE.DoubleSide }));
+  const base = new THREE.Mesh(
+    new THREE.PlaneGeometry((x1 - x0) * 1.03, (y1 - y0) * 1.03).rotateX(-Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0x0c0e12 }),
+  );
+  base.position.set((x0 + x1) / 2, BOTTOM - 2, -(y0 + y1) / 2);
+
+  const group = new THREE.Group();
+  group.add(mesh, skirtMesh, base);
+  return { group, mesh, bounds: { x0, x1, y0, y1 } };
+}
+
+/**
+ * Water surfaces from the DEM-derived levels: a mesh over every grid cell with
+ * water, clipped per pixel by the OSM mask. Flow follows the downhill gradient
+ * of the surface, so the Lachine rapids run fast and white, lakes barely move.
+ */
+export function createWater(t: Terrain, shared: Shared) {
+  const n = t.nx * t.ny;
+  const map = new Int32Array(n).fill(-1);
+  const pos: number[] = [], flow: number[] = [];
+  const L = t.water;
+  const lv = (i: number, j: number) => {
+    if (i < 0 || j < 0 || i >= t.nx || j >= t.ny) return NaN;
+    return L[j * t.nx + i];
+  };
+  for (let j = 0; j < t.ny; j++)
+    for (let i = 0; i < t.nx; i++) {
+      const k = j * t.nx + i;
+      if (Number.isNaN(L[k])) continue;
+      map[k] = pos.length / 3;
+      pos.push(t.x0 + i * t.dx, L[k] * EXZ + 0.6, -(t.y0 + j * t.dx));
+      // downhill gradient over ±3 cells (metres per metre)
+      const R = 3;
+      const ex = lv(i + R, j), wx = lv(i - R, j), nn = lv(i, j + R), sy = lv(i, j - R);
+      const gx = (Number.isNaN(ex) || Number.isNaN(wx) ? 0 : (wx - ex) / (2 * R * t.dx));
+      const gy = (Number.isNaN(nn) || Number.isNaN(sy) ? 0 : (sy - nn) / (2 * R * t.dx));
+      // world (x, y north) -> scene (x, z = -y)
+      flow.push(gx, -gy, Math.hypot(gx, gy));
+    }
+  const idx: number[] = [];
+  for (let j = 0; j < t.ny - 1; j++)
+    for (let i = 0; i < t.nx - 1; i++) {
+      const a = map[j * t.nx + i], b = map[j * t.nx + i + 1], c = map[(j + 1) * t.nx + i], d = map[(j + 1) * t.nx + i + 1];
+      if (a >= 0 && b >= 0 && c >= 0) idx.push(a, c, b);
+      if (b >= 0 && d >= 0 && c >= 0) idx.push(b, c, d);
+    }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("aFlow", new THREE.Float32BufferAttribute(flow, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  g.computeBoundingSphere();
+
+  const mat = new THREE.MeshStandardMaterial({ color: 0x0b1a25, roughness: 0.14, metalness: 0.55 });
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, shared);
+    sh.vertexShader = sh.vertexShader
+      .replace("#include <common>", "#include <common>\nattribute vec3 aFlow;varying vec3 vW;varying vec3 vFlow;")
+      .replace("#include <worldpos_vertex>", "#include <worldpos_vertex>\nvW = (modelMatrix * vec4(transformed, 1.)).xyz;vFlow = aFlow;");
+    sh.fragmentShader = sh.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>\nvarying vec3 vW;varying vec3 vFlow;uniform float uTime,uNight;uniform vec3 uHorizon;${MASK_GLSL}${SNOISE}
+        float wH(vec2 p, vec2 adv, float spd){
+          return snoise(p * .010 - adv) * .55 + snoise(p * .027 - adv * 1.9 + 7.3) * .3 + snoise(p * .07 - adv * 3.1 - 3.1) * .15 * (.4 + spd);
+        }`,
+      )
+      .replace(
+        "#include <clipping_planes_fragment>",
+        `#include <clipping_planes_fragment>
+        vec4 wm = maskAt(vW);
+        float wet = 1. - wm.r;
+        if (wet < .5) discard;`,
+      )
+      .replace(
+        "#include <normal_fragment_maps>",
+        /* glsl */ `#include <normal_fragment_maps>
+        float g = vFlow.z;
+        float spd = smoothstep(.0002, .004, g);
+        vec2 dir = g > 1e-6 ? vFlow.xy / g : vec2(.6, -.8);
+        // lakes drift with the wind, rivers run downhill
+        vec2 adv = dir * uTime * (.05 + 1.6 * spd) + vec2(.013, .021) * uTime;
+        vec2 P = vW.xz;
+        float e = 6.;
+        float h0 = wH(P, adv, spd), hx = wH(P + vec2(e, 0.), adv, spd), hz = wH(P + vec2(0., e), adv, spd);
+        float amp = 1.2 + 5. * spd;
+        vec3 nW = normalize(vec3(-(hx - h0) / e * amp * 6., 1., -(hz - h0) / e * amp * 6.));
+        normal = normalize((viewMatrix * vec4(nW, 0.)).xyz);
+        float foam = smoothstep(.45, .95, spd) * smoothstep(.05, .6, h0 + .25);
+        float shore = 1. - smoothstep(.5, .64, wet);`,
+      )
+      .replace(
+        "#include <emissivemap_fragment>",
+        /* glsl */ `#include <emissivemap_fragment>
+        vec3 V = normalize(cameraPosition - vW);
+        float fres = pow(1. - clamp(dot(V, nW), 0., 1.), 4.);
+        totalEmissiveRadiance += uHorizon * fres * (.55 - .35 * uNight);
+        totalEmissiveRadiance += vec3(.78, .86, .9) * (foam * .55 + shore * .12) * (1. - .6 * uNight);`,
+      );
+  };
+  const mesh = new THREE.Mesh(g, mat);
+  mesh.receiveShadow = true;
+  mesh.name = "water";
+  return mesh;
+}
+
+export async function loadTerrain(index: CityIndex) {
+  return decodeTerrain(await fetchGz(`/city/${index.terrain.file}`));
+}

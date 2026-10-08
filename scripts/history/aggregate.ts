@@ -110,7 +110,7 @@ function splitCsv(line: string): string[] {
 
 const excluded = { short: 0, long: 0, invalid: 0 };
 let rows = 0;
-let col: Record<string, number> = {};
+const col: Record<string, number> = {};
 
 function handleLine(line: string) {
   if (!line) return;

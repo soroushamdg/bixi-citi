@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { REGION } from "../../lib/geo";
-import { overpass, type OsmElement } from "../lib/overpass";
+import { overpass, TooBig, type OsmElement } from "../lib/overpass";
 
 export const CACHE = ".cache/osm";
 
@@ -27,52 +27,56 @@ export function fetchTiles() {
   return tiles;
 }
 
-const LAYERS = {
-  buildings: `(
+/**
+ * One query per tile fetches every layer at once: on a busy server the cost is
+ * getting a request accepted, not running it, so fewer requests win.
+ */
+const ALL = `(
   way["building"];
   way["building:part"];
   relation["building"];
   relation["building:part"];
-);`,
-  water: `(
-  way["natural"="water"];
-  relation["natural"="water"];
+  way["natural"~"^(water|wood|scrub|grassland|wetland|heath)$"];
+  relation["natural"~"^(water|wood|scrub|grassland|wetland|heath)$"];
   way["waterway"="riverbank"];
   relation["waterway"="riverbank"];
-  way["landuse"~"^(reservoir|basin)$"];
-  relation["landuse"~"^(reservoir|basin)$"];
-);`,
-  green: `(
+  way["landuse"~"^(reservoir|basin|grass|forest|recreation_ground|cemetery|meadow|village_green)$"];
+  relation["landuse"~"^(reservoir|basin|grass|forest|recreation_ground|cemetery|meadow|village_green)$"];
   way["leisure"~"^(park|garden|golf_course|nature_reserve)$"];
   relation["leisure"~"^(park|garden|golf_course|nature_reserve)$"];
-  way["landuse"~"^(grass|forest|recreation_ground|cemetery|meadow|village_green)$"];
-  relation["landuse"~"^(grass|forest|recreation_ground|cemetery|meadow|village_green)$"];
-  way["natural"~"^(wood|scrub|grassland|wetland|heath)$"];
-  relation["natural"~"^(wood|scrub|grassland|wetland|heath)$"];
-);`,
-  roads: `(
   way["highway"~"^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|cycleway|motorway_link|trunk_link|primary_link)$"];
   way["highway"]["cycleway"~"^(track|lane|separate)$"];
   way["highway"]["cycleway:both"];
-);`,
+);`;
+
+const ROAD = /^(motorway|trunk|primary|secondary|tertiary|residential|unclassified|living_street|cycleway|motorway_link|trunk_link|primary_link)$/;
+export const LAYER_TEST = {
+  buildings: (t: Record<string, string>) => !!t.building || !!t["building:part"],
+  water: (t: Record<string, string>) => t.natural === "water" || t.waterway === "riverbank" || t.landuse === "reservoir" || t.landuse === "basin",
+  green: (t: Record<string, string>) =>
+    /^(park|garden|golf_course|nature_reserve)$/.test(t.leisure ?? "") ||
+    /^(grass|forest|recreation_ground|cemetery|meadow|village_green)$/.test(t.landuse ?? "") ||
+    /^(wood|scrub|grassland|wetland|heath)$/.test(t.natural ?? ""),
+  roads: (t: Record<string, string>) => !!t.highway && (ROAD.test(t.highway) || /track|lane|separate/.test(t.cycleway ?? "") || !!t["cycleway:both"]),
 } as const;
-export type Layer = keyof typeof LAYERS;
+export type Layer = keyof typeof LAYER_TEST;
 
-const query = (layer: Layer, b: BBox) => `[out:json][timeout:60][bbox:${bboxStr(b)}];\n${LAYERS[layer]}\nout geom qt;`;
+const query = (b: BBox) => `[out:json][timeout:60][bbox:${bboxStr(b)}];\n${ALL}\nout geom qt;`;
 
-/** Fetch one tile of one layer, splitting into quadrants when the server keeps failing. */
-async function fetchLeaf(layer: Layer, b: BBox, key: string, depth: number): Promise<OsmElement[]> {
-  const path = `${CACHE}/${layer}/${key}.json.gz`;
-  const marker = `${CACHE}/${layer}/${key}.split`;
+/** Fetch one tile, splitting into quadrants when the server keeps failing. */
+async function fetchLeaf(b: BBox, key: string, depth: number): Promise<OsmElement[]> {
+  const path = `${CACHE}/all/${key}.json.gz`;
+  const marker = `${CACHE}/all/${key}.split`;
   if (!existsSync(marker)) {
     try {
-      return await overpass(query(layer, b), path, { attempts: depth < 2 ? 6 : 16 });
+      // a busy server is retried; only a query that is too heavy gets split
+      return await overpass(query(b), path, { attempts: 40 });
     } catch (err) {
-      if (depth >= 2) throw err;
+      if (!(err instanceof TooBig) || depth >= 2) throw err;
       const { writeFile, mkdir } = await import("node:fs/promises");
-      await mkdir(`${CACHE}/${layer}`, { recursive: true });
+      await mkdir(`${CACHE}/all`, { recursive: true });
       await writeFile(marker, "");
-      console.warn(`  ✂ splitting ${layer} ${key}`);
+      console.warn(`  ✂ splitting ${key}`);
     }
   }
   const ms = (b.s + b.n) / 2, mw = (b.w + b.e) / 2;
@@ -81,26 +85,28 @@ async function fetchLeaf(layer: Layer, b: BBox, key: string, depth: number): Pro
     { s: ms, w: b.w, n: b.n, e: mw }, { s: ms, w: mw, n: b.n, e: b.e },
   ];
   const out: OsmElement[] = [];
-  for (let q = 0; q < 4; q++) out.push(...(await fetchLeaf(layer, quads[q], `${key}-${q}`, depth + 1)));
+  for (let q = 0; q < 4; q++) out.push(...(await fetchLeaf(quads[q], `${key}-${q}`, depth + 1)));
   return out;
 }
 
-export async function fetchLayerTile(layer: Layer, t: ReturnType<typeof fetchTiles>[number]) {
-  return fetchLeaf(layer, t, t.key, 0);
+export async function fetchTile(t: ReturnType<typeof fetchTiles>[number]) {
+  return fetchLeaf(t, t.key, 0);
 }
 
-export function layerTileCached(layer: Layer, t: ReturnType<typeof fetchTiles>[number]) {
-  return existsSync(`${CACHE}/${layer}/${t.key}.json.gz`) || existsSync(`${CACHE}/${layer}/${t.key}.split`);
+export function tileCached(t: ReturnType<typeof fetchTiles>[number]) {
+  return existsSync(`${CACHE}/all/${t.key}.json.gz`) || existsSync(`${CACHE}/all/${t.key}.split`);
 }
 
 /** Every element of a layer over the whole region, deduplicated across tiles. */
 export async function loadLayer(layer: Layer, onlyCached = false): Promise<{ elements: OsmElement[]; missing: number }> {
   const seen = new Set<string>();
   const elements: OsmElement[] = [];
+  const test = LAYER_TEST[layer];
   let missing = 0;
   for (const t of fetchTiles()) {
-    if (onlyCached && !layerTileCached(layer, t)) { missing++; continue; }
-    for (const el of await fetchLayerTile(layer, t)) {
+    if (onlyCached && !tileCached(t)) { missing++; continue; }
+    for (const el of await fetchTile(t)) {
+      if (!test(el.tags ?? {})) continue;
       const id = el.type[0] + el.id;
       if (seen.has(id)) continue;
       seen.add(id);

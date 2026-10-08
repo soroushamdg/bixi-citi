@@ -154,7 +154,8 @@ export interface CityIndex {
   gridBearing: number;
   tile: number;
   block: number;
-  mask: { file: string; width: number; height: number };
+  /** ground texture: size in px, metres per px; its top-left is (bounds.x0, bounds.y1) */
+  mask: { file: string; width: number; height: number; m: number };
   terrain: { file: string };
   blocks: { file: string; count: number };
   /** u, v grid tile coords, world centre, buildings, tallest (m), gz bytes */

@@ -42,3 +42,5 @@ next-env.d.ts
 
 # local caches: OSM, DEM tiles, BIXI zips (everything downloaded lives here)
 /.cache/
+# preview screenshots from scripts/dev/shot.mjs
+/.cache/shots/

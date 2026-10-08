@@ -22,7 +22,7 @@ import { KIND, encodeBlocks, encodeTile, type CityIndex, type TileBuilding } fro
 import { loadDem, type Dem } from "../lib/dem";
 import type { OsmElement, OsmGeomPoint } from "../lib/overpass";
 import { assembleRings, centroid, cleanRing, pointInRing, ringArea, simplifyRing, type Ring } from "./geom";
-import { fetchTiles, layerTileCached, loadLayer } from "./osm";
+import { fetchTiles, loadLayer, tileCached } from "./osm";
 
 const OUT = "public/city";
 const WORK = ".cache/city";
@@ -130,7 +130,7 @@ async function buildMask() {
   const hi = new Uint8Array(HW * HH);
 
   // water → land = 255 - water
-  const water = (await loadLayer("water")).elements;
+  const water = (await loadLayer("water", true)).elements;
   let nWater = 0;
   for (const el of water) {
     const t = el.tags ?? {};
@@ -141,7 +141,7 @@ async function buildMask() {
   log(`water polygons: ${nWater}`);
 
   hi.fill(0);
-  const green = (await loadLayer("green")).elements;
+  const green = (await loadLayer("green", true)).elements;
   let nGreen = 0;
   for (const el of green) {
     const t = el.tags ?? {};
@@ -152,7 +152,7 @@ async function buildMask() {
   log(`green polygons: ${nGreen}`);
 
   // streets and bike network (only if every road tile is cached)
-  const roadsReady = fetchTiles().every((t) => layerTileCached("roads", t));
+  const roadsReady = fetchTiles().every((t) => tileCached(t));
   let streetLayer: Uint8Array = new Uint8Array(MW * MH), cycleLayer: Uint8Array = new Uint8Array(MW * MH), nRoads = 0;
   if (roadsReady) {
     const streets = new Uint8Array(HW * HH), cycles = new Uint8Array(HW * HH);
@@ -161,7 +161,7 @@ async function buildMask() {
       secondary: [13, 220], tertiary: [11, 200], residential: [8, 165], unclassified: [8, 160], living_street: [6, 140],
     };
     {
-      for (const el of (await loadLayer("roads")).elements) {
+      for (const el of (await loadLayer("roads", true)).elements) {
         if (!el.geometry) continue;
         const hw = el.tags?.highway ?? "";
         const pts = el.geometry.map(toXY);
@@ -412,7 +412,7 @@ async function buildBuildings(dem: Dem) {
     gridBearing: GRID_BEARING,
     tile: TILE,
     block: BLOCK,
-    mask: { file: "mask.png", width: MW, height: MH },
+    mask: { file: "mask.png", width: MW, height: MH, m: MASK_M },
     terrain: { file: "terrain.bin.gz" },
     blocks: { file: "blocks.bin.gz", count: bx.length },
     tiles: index,

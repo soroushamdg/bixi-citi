@@ -222,3 +222,26 @@ input[type=range]:disabled{opacity:.45}
   .wordmark{font-size:19px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---- additions for the production build ---- */
+.chip.live{color:var(--led)}
+.chip.real{color:var(--in-glow)}
+.chip.avg{color:var(--ink-2)}
+.label .chip{margin-left:6px;vertical-align:1px}
+.pill[data-state="wait"] .dot{background:var(--ink-3);box-shadow:none}
+.pill[data-state="error"] .dot{background:var(--out);box-shadow:0 0 10px var(--out)}
+.pill[data-state="stale"] .dot{background:#d9a441;box-shadow:0 0 10px #d9a441}
+.pill[data-state="live"] .dot{animation:breathe 2.4s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.45}}
+.lbl.minor{font-size:9px;letter-spacing:.18em;color:rgba(233,235,241,.6)}
+.chart-empty{padding:28px 0;text-align:center}
+.legend-inline{display:flex;gap:16px;margin-top:6px;font:500 10px/1 var(--mono);letter-spacing:.06em;color:var(--ink-3);text-transform:uppercase}
+.legend-inline span{display:flex;align-items:center;gap:6px}
+.legend-inline i{display:inline-block;width:14px;height:3px;border-radius:2px}
+.legend-inline i.dash{background:repeating-linear-gradient(90deg,var(--ink-3) 0 3px,transparent 3px 6px)}
+.station .net{font-size:11px;color:var(--ink-2)}
+.station .card-foot{margin:8px 0 0;font-size:11.5px;color:var(--ink-3)}
+.play:disabled{opacity:.4;cursor:default}
+.basin .labels{z-index:1}
+.list li.label{display:block}
+@media (prefers-reduced-motion:reduce){.pill .dot{animation:none!important}}
