@@ -241,7 +241,7 @@ function YearsPanel() {
         <h2>{idx ? `${idx.years.length} seasons of BIXI` : "Every season of BIXI"}</h2>
         <p className="lede">
           Every year of open trip data since {idx?.years[0]?.year ?? 2014}. Pick a year and press play: the season runs at a day per half second, stations rise
-          with that day&apos;s departures and a sample of its rides flashes across the city.
+          with that day&apos;s departures, a sample of its rides flashes across the city, and play rolls on into the next year.
         </p>
       </div>
       <div className="well chart">
@@ -303,12 +303,14 @@ function YearsPanel() {
 
 function Provenance() {
   const meta = useData((d) => d.meta);
+  const years = useData((d) => d.years);
   const info = useData((d) => d.info);
   const months = meta ? `${new Date(Date.UTC(meta.year, meta.months[0] - 1, 1)).toLocaleString("en-CA", { month: "short", timeZone: "UTC" })}–${new Date(Date.UTC(meta.year, meta.months[meta.months.length - 1] - 1, 1)).toLocaleString("en-CA", { month: "short", timeZone: "UTC" })} ${meta.year}` : "";
   return (
     <div className="prov">
       <div className="row"><Chip kind="live" /><span><b>Stations and counts.</b> {info ? fmt.format(info.ids.length) : "About 1,100"} stations from BIXI&apos;s GBFS 2.2 feed, cached about 30 s.</span></div>
       <div className="row"><Chip kind="real" /><span><b>Rides.</b> {meta ? `${fmt.format(meta.trips)} trips from BIXI's open data (${months}); ${storyDateLong(meta)} is played back in full.` : "BIXI's open trip history."}</span></div>
+      <div className="row"><Chip kind="real" /><span><b>Archive.</b> {years ? `${fmtMillions(years.years.reduce((a, y) => a + y.trips, 0))} trips from ${years.years.length} yearly files (${years.years[0].year}–${years.years[years.years.length - 1].year}); the fast-forward draws a fixed random sample of each day.` : "Every yearly file BIXI has published."}</span></div>
       <div className="row"><Chip kind="avg" /><span><b>Averages and slopes.</b> Season averages from the same trips. Elevations from AWS Terrain Tiles; the model is 2.4× vertical.</span></div>
       <div className="row"><span className="chip">MAP</span><span><b>City.</b> Buildings, water, parks and streets © OpenStreetMap contributors.</span></div>
     </div>

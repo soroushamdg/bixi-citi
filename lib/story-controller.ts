@@ -67,7 +67,7 @@ export function setMode(m: Mode, fromTour = false) {
 }
 
 /** Years mode: switch year, keep the cursor on the same calendar day when that day had service. */
-export function selectYear(year: number) {
+export function selectYear(year: number, fromStart = false) {
   const s = ui.getState();
   ui.setState({ year, selected: null });
   void loadYear(year).then(() => {
@@ -76,7 +76,8 @@ export function selectYear(year: number) {
     const doy = (iso: string) => (Date.parse(iso + "T00:00:00Z") - Date.UTC(year, 0, 1)) / 86400_000;
     const first = doy(y.firstDay), last = doy(y.lastDay);
     // keep the same calendar day across years when it had service; otherwise start with the season
-    if (s.yday === 0 || s.yday < first || s.yday > last) ui.setState({ yday: doy(y.seasonFrom) });
+    if (fromStart) ui.setState({ yday: first });
+    else if (s.yday === 0 || s.yday < first || s.yday > last) ui.setState({ yday: doy(y.seasonFrom) });
     if (ui.getState().mode === "years") setCaption({ ...yearCaption(y, data.getState().years), compact: false, cta: false });
   });
 }
@@ -189,8 +190,12 @@ function tick(now: number) {
     if (!y || !data.getState().yearDays) return;
     const last = (Date.parse(y.lastDay + "T00:00:00Z") - Date.UTC(y.year, 0, 1)) / 86400_000 + 0.99;
     const d = s.yday + dt / s.secPerDay;
-    if (d >= last) { ui.setState({ yday: last }); setPlaying(false); }
-    else ui.setState({ yday: d });
+    if (d >= last) {
+      // roll on into the next season, so play can run 2014 → today
+      const next = data.getState().years?.years.find((e) => e.year > y.year);
+      if (next) selectYear(next.year, true);
+      else { ui.setState({ yday: last }); setPlaying(false); }
+    } else ui.setState({ yday: d });
   } else setPlaying(false);
 }
 

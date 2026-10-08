@@ -6,6 +6,7 @@ An unofficial, interactive 3D portrait of [BIXI Montréal](https://bixi.com) bik
 - **Flows**: every ride of one real summer day from the yearly trip history, played back over the city with the sun moving with the clock. One arc is one ride.
 - **Rhythm**: average trips for each hour of the week, with that hour's busiest corridors drawn on the map.
 - **Stations**: which stations gain or lose bikes on an average day. Bikes roll downhill toward the river, and trucks carry them back up.
+- **Years**: every season of open data since 2014 (13 yearly files, 91 M rides). Each year has its rides-per-day calendar, peak and quietest days, busiest hour and routes, and growth on the previous year over the same months. Play fast-forwards through the season: stations rise with that day's departures, a sample of its rides flashes across the city, the 17:30 sun follows the calendar, and playback rolls on into the next year.
 
 Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from individual trips), or **DERIVED** (averages, or slopes computed from terrain).
 
@@ -25,17 +26,18 @@ Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from
 
 **Next.js on Vercel, no other server.** The two route handlers trim BIXI's feeds (station_status is about 0.5 MB, the trimmed columnar form about 17 KB). They send `s-maxage` + `stale-while-revalidate` headers so the CDN serves one copy to every visitor.
 
-**Trip history never touches Vercel functions.** `.github/workflows/history.yml` runs daily:
+**Trip history never touches Vercel functions.** `.github/workflows/history.yml` runs `scripts/history/update.ts` daily:
 
-1. `scripts/history/latest.ts` scrapes the open-data page for the newest yearly zip. Its filename grows as months are added.
-2. Only when the zip changed, CI downloads it. `cdn.bixi.com` blocks browser requests, so the download has to happen in CI.
-3. `scripts/history/aggregate.ts` streams the ~2 GB CSV through `unzip -p` and keeps trips as typed columns, about 12 bytes per trip. It writes:
+1. It reads the open-data page and lists every yearly zip. The current year's filename grows as months are added.
+2. It compares each zip's URL and ETag with what `public/data/years/index.json` was built from, and downloads only new or changed years. `cdn.bixi.com` blocks browser requests, so the download has to happen in CI.
+3. `scripts/history/years.ts` reads any of BIXI's file layouts (`scripts/history/read-trips.ts`: 2014–2020 station codes and local times, 2021's `emplacement_pk`, 2022 onward names, coordinates and epoch ms). Per year it writes a summary JSON, a station × day matrix of departures and arrivals, and a fixed random sample of 320 rides per day.
+4. For the newest year, `scripts/history/aggregate.ts` streams the ~2 GB CSV through `unzip -p` and keeps trips as typed columns, about 12 bytes per trip. It writes:
    - `meta.json`: totals, the story day, and per-chapter numbers that the captions quote.
    - `stations.json`: per-station hourly departures and arrivals for weekdays and weekends, plus net bikes per day.
    - `rhythm.json`: hour-of-week averages and 10-minute curves.
    - `flows.bin.gz`: the top 140 origin–destination pairs for each hour of the week.
    - `day/{0..3}.bin.gz`: every ride of the story day, delta-coded and loaded in 6-hour chunks.
-4. CI commits the outputs, and Vercel redeploys.
+5. CI commits the outputs, and Vercel redeploys.
 
 The story day is the Tuesday, Wednesday or Thursday at the 90th percentile of weekday volume, skipping holidays. It's busy without being an outlier.
 
@@ -72,9 +74,8 @@ Regenerate data locally (everything downloaded lands in the gitignored `.cache/`
 ```bash
 npm run city:fetch                       # Overpass, resumable; slow when servers are busy (optional)
 npm run city:build                       # → public/city (falls back to the PBF extract)
-npm run history:latest                   # which zip is newest?
-curl -L -A "Mozilla/5.0" -o .cache/history/latest.zip "<url from above>"
-npm run history:aggregate -- --zip .cache/history/latest.zip --url "<url>"
+npm run history:update                   # what CI runs: download and rebuild changed years
+npm run history:years -- --all           # rebuild every year from zips already in .cache/history
 ```
 
 ## Layout
