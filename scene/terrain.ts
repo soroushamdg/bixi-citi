@@ -156,8 +156,10 @@ export function createWater(t: Terrain, shared: Shared) {
       // downhill gradient over ±3 cells (metres per metre)
       const R = 3;
       const ex = lv(i + R, j), wx = lv(i - R, j), nn = lv(i, j + R), sy = lv(i, j - R);
-      const gx = (Number.isNaN(ex) || Number.isNaN(wx) ? 0 : (wx - ex) / (2 * R * t.dx));
-      const gy = (Number.isNaN(nn) || Number.isNaN(sy) ? 0 : (sy - nn) / (2 * R * t.dx));
+      // a jump of metres between neighbours is a lock or another water body, not a current
+      const ok = (a: number, b: number) => !Number.isNaN(a) && !Number.isNaN(b) && Math.abs(a - b) < 2.5;
+      const gx = ok(ex, wx) ? (wx - ex) / (2 * R * t.dx) : 0;
+      const gy = ok(nn, sy) ? (sy - nn) / (2 * R * t.dx) : 0;
       // world (x, y north) -> scene (x, z = -y)
       flow.push(gx, -gy, Math.hypot(gx, gy));
     }
@@ -165,8 +167,9 @@ export function createWater(t: Terrain, shared: Shared) {
   for (let j = 0; j < t.ny - 1; j++)
     for (let i = 0; i < t.nx - 1; i++) {
       const a = map[j * t.nx + i], b = map[j * t.nx + i + 1], c = map[(j + 1) * t.nx + i], d = map[(j + 1) * t.nx + i + 1];
-      if (a >= 0 && b >= 0 && c >= 0) idx.push(a, c, b);
-      if (b >= 0 && d >= 0 && c >= 0) idx.push(b, c, d);
+      // counter-clockwise seen from above, like the terrain
+      if (a >= 0 && b >= 0 && c >= 0) idx.push(a, b, c);
+      if (b >= 0 && d >= 0 && c >= 0) idx.push(b, d, c);
     }
   const g = new THREE.BufferGeometry();
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
@@ -175,7 +178,7 @@ export function createWater(t: Terrain, shared: Shared) {
   g.computeVertexNormals();
   g.computeBoundingSphere();
 
-  const mat = new THREE.MeshStandardMaterial({ color: 0x0b1a25, roughness: 0.14, metalness: 0.55 });
+  const mat = new THREE.MeshStandardMaterial({ color: 0x0c1f2b, roughness: 0.22, metalness: 0.2 });
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, shared);
     sh.vertexShader = sh.vertexShader
@@ -200,26 +203,33 @@ export function createWater(t: Terrain, shared: Shared) {
         "#include <normal_fragment_maps>",
         /* glsl */ `#include <normal_fragment_maps>
         float g = vFlow.z;
-        float spd = smoothstep(.0002, .004, g);
+        float spd = smoothstep(.0003, .005, g);
         vec2 dir = g > 1e-6 ? vFlow.xy / g : vec2(.6, -.8);
+        vec2 perp = vec2(-dir.y, dir.x);
         // lakes drift with the wind, rivers run downhill
-        vec2 adv = dir * uTime * (.05 + 1.6 * spd) + vec2(.013, .021) * uTime;
+        vec2 adv = dir * uTime * (.04 + 1.4 * spd) + vec2(.011, .017) * uTime;
         vec2 P = vW.xz;
-        float e = 6.;
+        float e = 5.;
         float h0 = wH(P, adv, spd), hx = wH(P + vec2(e, 0.), adv, spd), hz = wH(P + vec2(0., e), adv, spd);
-        float amp = 1.2 + 5. * spd;
-        vec3 nW = normalize(vec3(-(hx - h0) / e * amp * 6., 1., -(hz - h0) / e * amp * 6.));
+        float k = 2.2 + 7. * spd;
+        vec3 nW = normalize(vec3(-(hx - h0) / e * k, 1., -(hz - h0) / e * k));
         normal = normalize((viewMatrix * vec4(nW, 0.)).xyz);
-        float foam = smoothstep(.45, .95, spd) * smoothstep(.05, .6, h0 + .25);
-        float shore = 1. - smoothstep(.5, .64, wet);`,
+        // long streaks that travel with the current
+        vec2 q = vec2(dot(P, dir) * .004, dot(P, perp) * .03);
+        float streak = smoothstep(.35, .95, snoise(q - vec2(uTime * (.05 + .9 * spd), 0.)));
+        float foam = smoothstep(.65, .98, spd) * smoothstep(.1, .7, h0 + .3);
+        float shore = 1. - smoothstep(.5, .6, wet);`,
       )
       .replace(
         "#include <emissivemap_fragment>",
         /* glsl */ `#include <emissivemap_fragment>
         vec3 V = normalize(cameraPosition - vW);
         float fres = pow(1. - clamp(dot(V, nW), 0., 1.), 4.);
-        totalEmissiveRadiance += uHorizon * fres * (.55 - .35 * uNight);
-        totalEmissiveRadiance += vec3(.78, .86, .9) * (foam * .55 + shore * .12) * (1. - .6 * uNight);`,
+        float day = 1. - uNight;
+        // the sky, mirrored at grazing angles and broken up by the ripples
+        totalEmissiveRadiance += uHorizon * (.025 + .32 * fres) * (.35 + .65 * day);
+        totalEmissiveRadiance += uHorizon * streak * (.035 + .06 * spd) * day;
+        totalEmissiveRadiance += vec3(.8, .87, .9) * (foam * .45 + shore * .05) * (.3 + .7 * day);`,
       );
   };
   const mesh = new THREE.Mesh(g, mat);

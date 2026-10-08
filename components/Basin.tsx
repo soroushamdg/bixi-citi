@@ -87,6 +87,8 @@ export function Basin() {
         }, HOME);
         if (disposed) { handle.dispose(); return; }
         attachScene(handle);
+        // dev-only handle for scripted screenshots (scripts/dev/shot.mjs)
+        if (process.env.NODE_ENV !== "production") Object.assign(window, { __bixi: { scene: handle, ui, data } });
       } catch (err) {
         console.error(err);
         ui.setState({ sceneStatus: "failed" });
