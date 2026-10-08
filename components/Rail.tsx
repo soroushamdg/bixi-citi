@@ -8,6 +8,11 @@ import { TripsPerHour } from "./charts/TripsPerHour";
 import { Heatmap, useRhythmPeak } from "./charts/Heatmap";
 import { NetStations } from "./charts/NetStations";
 import { LiveActivity } from "./charts/LiveActivity";
+import { AnnualBars } from "./charts/AnnualBars";
+import { YearCalendar } from "./charts/YearCalendar";
+import { scrubDay } from "@/lib/story-controller";
+import { dayLong, dayShort, fmtMillions, monthDay, pct, signedPct } from "@/lib/years-copy";
+import type { DayStat } from "@/lib/formats/years";
 import { Chip } from "./Kpis";
 import { Meter } from "./StationCard";
 
@@ -211,6 +216,91 @@ function StationsPanel() {
   );
 }
 
+function YearsPanel() {
+  const idx = useData((d) => d.years);
+  const y = useData((d) => d.yearSummary);
+  const year = useUI((s) => s.year);
+  const line = idx?.years.find((e) => e.year === year);
+  const jump = (d: DayStat) => scrubDay((Date.parse(d.date + "T00:00:00Z") - Date.UTC(+d.date.slice(0, 4), 0, 1)) / 86400_000);
+  const dayList = (list: DayStat[], cls: string) => (
+    <ul className={`list days ${cls}`}>
+      {list.map((d) => (
+        <li key={d.date}>
+          <button onClick={() => jump(d)}>
+            <span className="nm">{dayShort(d)}</span>
+            <span className="ct">{fmt.format(d.trips)}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+  return (
+    <section className="panel">
+      <div>
+        <span className="label">Mode 05 · Years</span>
+        <h2>{idx ? `${idx.years.length} seasons of BIXI` : "Every season of BIXI"}</h2>
+        <p className="lede">
+          Every year of open trip data since {idx?.years[0]?.year ?? 2014}. Pick a year and press play: the season runs at a day per half second, stations rise
+          with that day&apos;s departures and a sample of its rides flashes across the city.
+        </p>
+      </div>
+      <div className="well chart">
+        <div className="well-head"><span className="label">Rides per year <Chip kind="real" /></span><span className="v">{idx ? `peak ${idx.allTimePeak.date}` : ""}</span></div>
+        <AnnualBars />
+      </div>
+      {y && line ? (
+        <>
+          <div className="year-head">
+            <b>{y.year}</b>
+            <span>
+              {fmtMillions(y.trips)} rides{line.partial ? " so far" : ""}
+              {line.growth != null && <em className={line.growth >= 0 ? "up" : "down"}>{signedPct(line.growth)} vs {y.year - 1}</em>}
+            </span>
+            <small>
+              {dayLong(y.firstDay)} → {dayLong(y.lastDay)} · {fmt.format(y.stationsActive)} stations{line.newStations ? ` (${fmt.format(line.newStations)} new)` : ""}
+            </small>
+          </div>
+          <div className="well chart">
+            <div className="well-head"><span className="label">Rides per day <Chip kind="real" /></span><span className="v">{y.serviceDays} days of service</span></div>
+            <YearCalendar />
+          </div>
+          <div className="stats">
+            <div className="stat"><b>{fmt.format(y.peakDays[0].trips)}</b><span>Busiest day · {dayShort(y.peakDays[0])}</span></div>
+            <div className="stat"><b>{fmt.format(y.peakHour.trips)}</b><span>Busiest hour · {monthDay(y.peakHour.date)}, {String(y.peakHour.hour).padStart(2, "0")}h</span></div>
+            <div className="stat"><b>{y.medianMin.toFixed(0)} min</b><span>Median ride</span></div>
+            <div className="stat"><b>{fmt.format(y.weekdayAvg)}</b><span>Avg weekday</span></div>
+            <div className="stat"><b>{fmt.format(y.weekendAvg)}</b><span>Avg weekend day</span></div>
+            <div className="stat"><b>{y.memberShare != null ? pct(y.memberShare) : "—"}</b><span>{y.memberShare != null ? "Rides by members" : "Members not published"}</span></div>
+          </div>
+          <div className="well two">
+            <div>
+              <div className="well-head"><span className="label">Peak days</span></div>
+              {dayList(y.peakDays, "peak")}
+            </div>
+            <div>
+              <div className="well-head"><span className="label">Quietest in season</span></div>
+              {dayList(y.lowDays, "low")}
+            </div>
+          </div>
+          <div className="well">
+            <div className="well-head"><span className="label">Busiest routes <Chip kind="real" /></span><span className="v">rides</span></div>
+            <ul className="list">
+              {y.topRoutes.slice(0, 3).map((r) => (
+                <li key={`${r.from}-${r.to}`}>
+                  <span className="nm" title={`${r.fromName} → ${r.toName}`}>{r.fromName} → {r.toName}</span>
+                  <span className="ct">{fmt.format(r.trips)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </>
+      ) : (
+        <div className="chart-empty label">Loading {year || "the year"}…</div>
+      )}
+    </section>
+  );
+}
+
 function Provenance() {
   const meta = useData((d) => d.meta);
   const info = useData((d) => d.info);
@@ -233,6 +323,7 @@ export function Rail() {
       {mode === "flows" && <FlowsPanel />}
       {mode === "rhythm" && <RhythmPanel />}
       {mode === "stations" && <StationsPanel />}
+      {mode === "years" && <YearsPanel />}
       <Provenance />
     </aside>
   );

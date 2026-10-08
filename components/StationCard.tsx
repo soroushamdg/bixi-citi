@@ -25,7 +25,7 @@ export function StationCard() {
   const docks = useData((d) => d.docks);
   const h2l = useData((d) => d.histToLive);
   const l2h = useData((d) => d.liveToHist);
-  if (!sel) return null;
+  if (!sel || sel.set === "year") return null;
   const li = sel.set === "live" ? sel.i : (h2l[sel.i] ?? -1);
   const hi = sel.set === "hist" ? sel.i : (l2h[sel.i] ?? -1);
   const name = sel.set === "live" ? info?.name[sel.i] : hist?.name[sel.i];

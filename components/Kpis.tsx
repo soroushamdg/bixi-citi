@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useData, useUI } from "@/lib/store";
 import { DAYS } from "@/lib/story";
 import { ridingAt, startedBetween } from "@/lib/history/query";
+import { dayLong } from "@/lib/years-copy";
 
 const fmt = new Intl.NumberFormat("en-CA");
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -46,6 +47,8 @@ export function Kpis() {
   const mode = useUI((s) => s.mode);
   const minute = useUI((s) => Math.floor(s.minute));
   const wd = useUI((s) => s.day);
+  const yday = useUI((s) => s.yday);
+  const yearSummary = useData((d) => d.yearSummary);
 
   const net = useMemo(() => {
     if (!info || !bikes.length) return null;
@@ -74,6 +77,17 @@ export function Kpis() {
     const h = Math.floor(minute / 60) % 24;
     const v = rhythm ? rhythm.how[wd * 24 + h] : 0;
     dyn = { label: "This hour", chip: "avg", value: rhythm ? fmt.format(Math.round(v / 10) * 10) : "…", small: "trips", sub: `average ${DAYS[wd]} ${pad(h)}:00 to ${pad((h + 1) % 24)}:00` };
+  } else if (mode === "years") {
+    const y = yearSummary;
+    const d = Math.floor(yday);
+    const v = y?.daily[d] ?? 0;
+    const served = y ? y.daily.filter((x) => x > 0).length : 0;
+    const rank = y && v ? y.daily.filter((x) => x > v).length + 1 : 0;
+    const iso = y ? new Date(Date.UTC(y.year, 0, 1) + d * 86400_000).toISOString().slice(0, 10) : "";
+    dyn = {
+      label: "That day", chip: "real", value: y ? fmt.format(v) : "…", small: y ? "rides" : undefined,
+      sub: y ? (v ? `${dayLong(iso)} · #${rank} of ${served} days` : `${dayLong(iso)} · no service`) : "loading the year",
+    };
   } else {
     dyn = { label: "To rebalance", chip: "avg", value: meta ? fmt.format(Math.round(meta.pile.haulPerDay / 10) * 10) : "…", sub: "per day, net drift between stations" };
   }

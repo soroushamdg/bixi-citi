@@ -277,3 +277,27 @@ input[type=range]:disabled{opacity:.45}
   .kpi-val small{display:none}
   .caption{left:12px;top:12px;width:calc(100% - 24px)}
 }
+/* Years */
+.year-head{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;align-items:baseline;padding:2px 2px 0}
+.year-head b{grid-row:span 2;font:600 34px/1 var(--display);letter-spacing:-.01em;color:var(--ink)}
+.year-head span{font:500 15px/1.3 var(--display);color:var(--ink);display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.year-head em{font:500 11px/1 var(--mono);font-style:normal;letter-spacing:.06em;color:var(--ink-2)}
+.year-head em.up{color:var(--in-glow)}
+.year-head em.down{color:var(--out-glow)}
+.year-head small{font-size:11.5px;color:var(--ink-3)}
+.stats .stat span{line-height:1.35}
+.well.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.list.days li{grid-template-columns:minmax(0,1fr) auto}
+.list.days .nm{font-size:12.5px}
+.list.days.peak .ct{color:var(--out-glow)}
+.list.days.low .ct{color:var(--in-glow)}
+.yearchips{display:flex;gap:5px;padding:6px;border-radius:999px;box-shadow:var(--press-sm);overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.yearchips button{padding:7px 9px;border-radius:999px;font:500 10.5px/1 var(--mono);letter-spacing:.06em;color:var(--ink-3);flex:none}
+.yearchips button:hover{color:var(--ink-2)}
+.yearchips button[aria-pressed="true"]{color:var(--ink);box-shadow:3px 3px 7px var(--lo),-2px -2px 6px var(--hi);background:var(--console)}
+.yearchips button[aria-pressed="true"]::before{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--brand);box-shadow:0 0 6px var(--brand);margin-right:6px;vertical-align:1px}
+.yearchips button.partial{font-style:italic}
+.speed{padding:9px 12px;border-radius:999px;box-shadow:var(--raise-sm),var(--edge);font:500 10.5px/1 var(--mono);letter-spacing:.08em;color:var(--ink-2);flex:none}
+.speed:active{box-shadow:var(--press-sm)}
+.month-ticks{position:relative;display:block;height:10px}
+.month-ticks span{position:absolute;top:0;transform:translateX(-50%)}

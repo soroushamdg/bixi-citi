@@ -8,6 +8,8 @@ import type { View } from "@/scene";
 export const MTLN = 302;
 export const HOME: View = [45.5085, -73.5855, 10800, MTLN, 55];
 export const REGION_VIEW: View = [45.525, -73.66, 42000, MTLN, 40];
+/** Years: the whole network, a little higher than the hero view */
+export const HOME_YEARS: View = [45.515, -73.6, 16500, MTLN, 50];
 
 export interface Chapter {
   key: string;

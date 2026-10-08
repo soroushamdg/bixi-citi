@@ -5,10 +5,11 @@ import type { LiveStatus, StationInfo } from "./gbfs";
 import type { SnapshotDiff } from "./live/diff";
 import type { DayTrips, Flows } from "./formats/history";
 import type { HistoryMeta } from "./story";
+import type { YearDays, YearSample, YearSummary, YearsIndex } from "./formats/years";
 
-export type Mode = "live" | "flows" | "rhythm" | "stations";
+export type Mode = "live" | "flows" | "rhythm" | "stations" | "years";
 /** a station is either in the live GBFS network or in the trip history */
-export type StationSet = "live" | "hist";
+export type StationSet = "live" | "hist" | "year";
 export interface Sel { set: StationSet; i: number }
 
 export interface UIState {
@@ -28,6 +29,11 @@ export interface UIState {
   /** Montréal weekday (0 = Monday) and date (YYYY-MM-DD); empty until the browser sets the clock */
   liveDay: number;
   liveDate: string;
+  /** Years mode: the selected year and the cursor in it (fractional day of year, 1 Jan = 0) */
+  year: number;
+  yday: number;
+  /** seconds of real time per day of fast-forward */
+  secPerDay: number;
   sceneStatus: "loading" | "ready" | "failed";
   loadProgress: number;
   loadText: string;
@@ -45,6 +51,9 @@ export const ui = createStore<UIState>(() => ({
   liveMinute: 0,
   liveDay: 0,
   liveDate: "",
+  year: 0,
+  yday: 0,
+  secPerDay: 0.5,
   sceneStatus: "loading",
   loadProgress: 0,
   loadText: "Raising Montréal",
@@ -89,6 +98,11 @@ export interface DataState {
   rhythm: Rhythm | null;
   flows: Flows | null;
   day: Array<DayTrips | null>;
+  years: YearsIndex | null;
+  /** the selected year's files, null while loading */
+  yearSummary: YearSummary | null;
+  yearDays: YearDays | null;
+  yearSample: YearSample | null;
   /** history index -> live index (or -1) and back */
   histToLive: Int32Array;
   liveToHist: Int32Array;
@@ -108,6 +122,10 @@ export const data = createStore<DataState>(() => ({
   rhythm: null,
   flows: null,
   day: [null, null, null, null],
+  years: null,
+  yearSummary: null,
+  yearDays: null,
+  yearSample: null,
   histToLive: new Int32Array(0),
   liveToHist: new Int32Array(0),
 }));

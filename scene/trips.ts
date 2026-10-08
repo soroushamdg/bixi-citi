@@ -9,8 +9,6 @@ import type { Stations } from "./stations";
  * CPU only flips which hourly buckets are visible.
  */
 const SEG = 16;
-const TRAIL = 0.42;
-const RING_MIN = 3.5; // story minutes a dock ring lasts
 
 const ARC_GLSL = /* glsl */ `
 uniform float uNow, uWidth, uLift;
@@ -53,8 +51,28 @@ function quadBase() {
   return g;
 }
 
-export function createTrips(scene: THREE.Scene) {
+export interface TripsOptions {
+  /** tail length as a share of the ride */
+  trail?: number;
+  /** how long a dock ring lasts, in timeline units */
+  ring?: number;
+  /** bucket size in timeline units (buckets toggle visibility) */
+  bucket?: number;
+}
+
+/** Rides in timeline units (story minutes for Flows, year-minutes for Years). */
+export interface TripBatch {
+  start: ArrayLike<number>;
+  dur: ArrayLike<number>;
+  from: ArrayLike<number>;
+  to: ArrayLike<number>;
+}
+
+export function createTrips(scene: THREE.Scene, opts: TripsOptions = {}) {
+  const TRAIL = opts.trail ?? 0.42, RING = opts.ring ?? 3.5, BUCKET = opts.bucket ?? 60;
   const uniforms = {
+    uTrail: { value: TRAIL },
+    uRing: { value: RING },
     uNow: { value: 0 },
     uWidth: { value: 6 },
     uLift: { value: 1 },
@@ -65,11 +83,12 @@ export function createTrips(scene: THREE.Scene) {
     uniforms,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
     vertexShader: /* glsl */ `${ARC_GLSL}${COLORS}
+      uniform float uTrail;
       attribute float aU, aSide;
       varying vec3 vCol; varying float vSide;
       void main(){
         float p = (uNow - iA.w) / max(iB.w, .5);
-        float head = clamp(p, 0., 1.), tail = clamp(p - ${TRAIL.toFixed(2)}, 0., 1.);
+        float head = clamp(p, 0., 1.), tail = clamp(p - uTrail, 0., 1.);
         if (p < 0. || head - tail < 1e-4) { gl_Position = vec4(2., 2., 2., 1.); return; }
         float u = mix(tail, head, aU);
         vec3 P = arcAt(iA.xyz, iB.xyz, u), T = arcTan(iA.xyz, iB.xyz, u);
@@ -86,13 +105,13 @@ export function createTrips(scene: THREE.Scene) {
     uniforms,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false,
     vertexShader: /* glsl */ `${ARC_GLSL}${COLORS}
-      uniform float uHead;
+      uniform float uHead, uRing;
       attribute vec2 aCorner;
       varying vec2 vC; varying vec3 vCol; varying float vRing;
       void main(){
         float p = (uNow - iA.w) / max(iB.w, .5);
         float after = uNow - (iA.w + iB.w);
-        if (p < 0. || after > ${RING_MIN.toFixed(1)}) { gl_Position = vec4(2., 2., 2., 1.); return; }
+        if (p < 0. || after > uRing) { gl_Position = vec4(2., 2., 2., 1.); return; }
         vec3 P;
         vC = aCorner;
         if (p <= 1.) {
@@ -104,7 +123,7 @@ export function createTrips(scene: THREE.Scene) {
           vCol = mix(OUTG, ING, p) * 1.7;
           vRing = 0.;
         } else {
-          float e = clamp(after / ${RING_MIN.toFixed(1)}, 0., 1.);
+          float e = clamp(after / uRing, 0., 1.);
           float r = (14. + 70. * (1. - pow(1. - e, 3.))) * uHead / 60.;
           P = iB.xyz + vec3(aCorner.x * r, 2., aCorner.y * r);
           vCol = ING * 2.2 * (1. - e);
@@ -127,27 +146,25 @@ export function createTrips(scene: THREE.Scene) {
   group.name = "trips";
   scene.add(group);
 
-  /** Add one decoded chunk of the story day (positions come from the history pillars). */
-  function addChunk(day: DayTrips, stations: Stations) {
-    const H = stations.hist;
-    if (!H.n) return;
-    // bucket by start hour
-    const byHour = new Map<number, number[]>();
-    for (let k = 0; k < day.start.length; k++) {
-      if (day.from[k] === day.to[k] || day.from[k] >= H.n || day.to[k] >= H.n) continue; // round trips have no arc
-      const h = Math.floor(day.start[k] / 3600);
-      const l = byHour.get(h);
-      if (l) l.push(k); else byHour.set(h, [k]);
+  /** Add rides; positions come from a pillar set (station feet). Round trips have no arc. */
+  function addTrips(batch: TripBatch, set: { n: number; x: Float32Array; g: Float32Array; z: Float32Array }) {
+    if (!set.n) return;
+    const byBucket = new Map<number, number[]>();
+    for (let k = 0; k < batch.start.length; k++) {
+      if (batch.from[k] === batch.to[k] || batch.from[k] >= set.n || batch.to[k] >= set.n) continue;
+      const b = Math.floor(batch.start[k] / BUCKET);
+      const l = byBucket.get(b);
+      if (l) l.push(k); else byBucket.set(b, [k]);
     }
-    for (const [h, list] of byHour) {
+    for (const [b, list] of byBucket) {
       const A = new Float32Array(list.length * 4), B = new Float32Array(list.length * 4);
       let maxEnd = 0;
       list.forEach((k, j) => {
-        const s = day.from[k], e = day.to[k];
-        const start = day.start[k] / 60, dur = Math.max(0.5, day.dur[k] / 60);
-        A.set([H.x[s], H.g[s] + 4, H.z[s], start], j * 4);
-        B.set([H.x[e], H.g[e] + 4, H.z[e], dur], j * 4);
-        maxEnd = Math.max(maxEnd, start + dur * (1 + TRAIL) + RING_MIN);
+        const s = batch.from[k], e = batch.to[k];
+        const start = batch.start[k], dur = Math.max(0.5, batch.dur[k]);
+        A.set([set.x[s], set.g[s] + 4, set.z[s], start], j * 4);
+        B.set([set.x[e], set.g[e] + 4, set.z[e], dur], j * 4);
+        maxEnd = Math.max(maxEnd, start + dur * (1 + TRAIL) + RING);
       });
       const mk = (base: THREE.InstancedBufferGeometry, mat: THREE.ShaderMaterial) => {
         base.setAttribute("iA", new THREE.InstancedBufferAttribute(A, 4));
@@ -159,8 +176,15 @@ export function createTrips(scene: THREE.Scene) {
         group.add(m);
         return m;
       };
-      buckets.push({ from: h * 60, to: maxEnd, ribbons: mk(ribbonBase(), ribbonMat), heads: mk(quadBase(), headMat) });
+      buckets.push({ from: b * BUCKET, to: maxEnd, ribbons: mk(ribbonBase(), ribbonMat), heads: mk(quadBase(), headMat) });
     }
+  }
+
+  /** Add one decoded chunk of the story day (seconds → story minutes). */
+  function addChunk(day: DayTrips, stations: Stations) {
+    const start = Float32Array.from(day.start, (v) => v / 60);
+    const dur = Float32Array.from(day.dur, (v) => v / 60);
+    addTrips({ start, dur, from: day.from, to: day.to }, stations.hist);
   }
 
   function update(now: number, visible: boolean, camDist: number) {
@@ -184,7 +208,7 @@ export function createTrips(scene: THREE.Scene) {
     buckets.length = 0;
   }
 
-  return { group, addChunk, update, clear };
+  return { group, addChunk, addTrips, update, clear, uniforms };
 }
 
 /**

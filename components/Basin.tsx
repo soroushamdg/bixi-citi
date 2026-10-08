@@ -1,10 +1,26 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { data, ui, useUI, type Sel } from "@/lib/store";
+import { data, ui, useData, useUI, type Sel } from "@/lib/store";
+import { SAMPLE_PER_DAY } from "@/lib/formats/years";
 import { attachScene, getScene, play, resetView, useStory } from "@/lib/story-controller";
 import { HOME } from "@/lib/chapters";
 import { hideTip, row, showTip, title } from "@/lib/tip";
 import { StationCard } from "./StationCard";
+
+function YearsLegend() {
+  const y = useData((d) => d.yearSummary);
+  const day = useUI((s) => Math.floor(s.yday));
+  const n = y?.daily[day] ?? 0;
+  const per = n ? Math.max(1, Math.round(n / SAMPLE_PER_DAY)) : 0;
+  return (
+    <>
+      <span className="li"><span className="sw" style={{ background: "#E0703F" }} />Lost bikes</span>
+      <span className="li"><span className="sw" style={{ background: "#2A9CB8" }} />Gained</span>
+      <span className="li">height = departures that day</span>
+      {per > 0 && <span className="li">1 arc ≈ {per} rides</span>}
+    </>
+  );
+}
 
 const LEGEND = {
   live: (
@@ -33,10 +49,23 @@ const LEGEND = {
       <span className="li">height = average net per day</span>
     </>
   ),
+  years: <YearsLegend />,
 };
 
 function stationTip(sel: Sel) {
   const d = data.getState(), s = ui.getState();
+  if (sel.set === "year") {
+    const y = d.yearSummary, Y = d.yearDays;
+    if (!y) return "";
+    let html = title(y.stations.name[sel.i] ?? "Station");
+    const k = Math.floor(s.yday) - (Y?.firstDoy ?? 0);
+    if (Y && k >= 0 && k < Y.days && sel.i < Y.stations) {
+      html += row("Bikes taken that day", Y.dep[k * Y.stations + sel.i]) + row("Bikes returned", Y.arr[k * Y.stations + sel.i]);
+    }
+    const tot = (y.stations as { trips?: number[] }).trips?.[sel.i];
+    if (tot) html += row(`Departures in ${y.year}`, tot.toLocaleString("en-CA"));
+    return html;
+  }
   const live = sel.set === "live" ? sel.i : d.histToLive[sel.i] ?? -1;
   const hi = sel.set === "hist" ? sel.i : d.liveToHist[sel.i] ?? -1;
   const name = sel.set === "live" ? d.info?.name[sel.i] : d.hist?.name[sel.i];

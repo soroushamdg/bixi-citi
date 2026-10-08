@@ -168,14 +168,30 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
 
   const stations = createStations(scene);
   const trips = createTrips(scene);
+  // Years: sampled rides on a year-long timeline (minutes since 1 January); each arc flashes for ~0.4 day
+  const YEAR_ARC = 600;
+  const yearTrips = createTrips(scene, { trail: 0.5, ring: 140, bucket: 1440 * 7 });
   const corridors = createCorridors(scene);
   const pulses = createPulses(scene, reduced);
   const labels = createLabels(host, terrain);
 
   // wire data as it arrives (live and history load independently)
   const addedChunks = new Set<number>();
+  let yearKey = "";
   const syncData = () => {
     const d = data.getState();
+    const yk = `${d.yearSummary?.year ?? 0}|${d.yearDays ? 1 : 0}|${d.yearSample ? 1 : 0}`;
+    if (yk !== yearKey) {
+      yearKey = yk;
+      stations.setYear(d, terrain!);
+      yearTrips.clear();
+      if (d.yearSummary && d.yearSample) {
+        const S = d.yearSample;
+        const start = new Float32Array(S.count), dur = new Float32Array(S.count).fill(YEAR_ARC);
+        for (let k = 0; k < S.count; k++) start[k] = S.doy[k] * 1440 + S.minute[k];
+        yearTrips.addTrips({ start, dur, from: S.from, to: S.to }, stations.year);
+      }
+    }
     if (d.info && stations.live.n !== d.info.ids.length) stations.setLive(d, terrain!);
     if (d.hist && stations.hist.n !== d.hist.name.length) {
       stations.setHistory(d, terrain!);
@@ -240,6 +256,11 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     storyDate = data.getState().meta?.storyDay.date ?? storyDate;
     if (s.mode === "live") return Date.now();
     if (s.mode === "stations") return montrealMs(storyDate, 1118);
+    if (s.mode === "years" && s.year) {
+      // the evening rush of the day under the cursor: long June light, dark November
+      const d = new Date(Date.UTC(s.year, 0, 1) + Math.floor(s.yday) * 86400_000).toISOString().slice(0, 10);
+      return montrealMs(d, 17 * 60 + 30);
+    }
     return montrealMs(storyDate, s.minute);
   };
 
@@ -271,6 +292,7 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
 
     stations.update(s, d, camDist, dtMs / 1000);
     trips.update(s.minute, s.mode === "flows", camDist);
+    yearTrips.update(s.yday * 1440, s.mode === "years", camDist);
     if (s.mode === "rhythm" && d.flows) corridors.set(d.flows, s.day * 24 + Math.floor(s.minute / 60), stations);
     corridors.update(s.mode === "rhythm", now / 1000, camDist);
     pulses.update(now / 1000, stations, camDist);

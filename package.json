@@ -12,7 +12,9 @@
     "city:fetch": "tsx scripts/city/fetch-osm.ts",
     "city:build": "NODE_OPTIONS=--max-old-space-size=8192 tsx scripts/city/build-city.ts",
     "history:latest": "tsx scripts/history/latest.ts",
-    "history:aggregate": "NODE_OPTIONS=--max-old-space-size=8192 tsx scripts/history/aggregate.ts"
+    "history:aggregate": "NODE_OPTIONS=--max-old-space-size=8192 tsx scripts/history/aggregate.ts",
+    "history:update": "tsx scripts/history/update.ts",
+    "history:years": "NODE_OPTIONS=--max-old-space-size=12288 tsx scripts/history/years.ts"
   },
   "dependencies": {
     "earcut": "^3.2.4",

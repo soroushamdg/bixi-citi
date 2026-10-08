@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { EXZ, project } from "@/lib/geo";
 import { groundAt, type Terrain } from "@/lib/formats/terrain";
-import type { DataState, Mode, UIState } from "@/lib/store";
+import type { DataState, Mode, StationSet, UIState } from "@/lib/store";
 
 export const COL = {
   outGlow: new THREE.Color("#ff9d6c"),
@@ -60,6 +60,10 @@ export function createStations(scene: THREE.Scene) {
   scene.add(group);
   const live = new PillarSet(group, 1600);
   const hist = new PillarSet(group, 2400);
+  const year = new PillarSet(group, 2400);
+  const setOf = (k: StationSet) => (k === "live" ? live : k === "hist" ? hist : year);
+  /** Years mode: the 98th-percentile departures of one station-day, for scaling */
+  let yearDepMax = 1;
   let radius = 10;
 
   const halo = new THREE.Mesh(
@@ -85,6 +89,15 @@ export function createStations(scene: THREE.Scene) {
       depMax[h] = m || 1;
     }
   }
+  function setYear(d: DataState, terrain: Terrain) {
+    const s = d.yearSummary;
+    if (!s) { year.n = 0; year.pillars.count = year.caps.count = 0; return; }
+    year.setPositions(s.stations.lat, s.stations.lon, terrain);
+    if (d.yearDays) {
+      const v = Array.from(d.yearDays.dep).filter((x) => x > 0).sort((a, b) => a - b);
+      yearDepMax = v[Math.floor(v.length * 0.98)] || 1;
+    }
+  }
   function setLive(d: DataState, terrain: Terrain) {
     if (d.info) live.setPositions(d.info.lat, d.info.lon, terrain);
   }
@@ -94,9 +107,34 @@ export function createStations(scene: THREE.Scene) {
     const hour = Math.floor(ui.minute / 60) % 24;
     const weekend = ui.day >= 5;
     for (let i = 0; i < live.n; i++) live.ht[i] = m === "live" && d.bikes[i] >= 0 ? 24 + d.bikes[i] * 7.5 : 0;
+    const Y = d.yearDays;
+    // Years: that day's departures, blended with the next day so the fast-forward flows
+    const fd = Y ? ui.yday - Y.firstDoy : 0;
+    const d0 = Y ? Math.max(0, Math.min(Y.days - 1, Math.floor(fd))) : 0, d1 = Y ? Math.min(Y.days - 1, d0 + 1) : 0, f = fd - Math.floor(fd);
+    for (let i = 0; i < year.n; i++) {
+      if (m !== "years" || !Y || i >= Y.stations) { year.ht[i] = 0; continue; }
+      const dep = Y.dep[d0 * Y.stations + i] * (1 - f) + Y.dep[d1 * Y.stations + i] * f;
+      year.ht[i] = dep > 0 ? 8 + 380 * Math.sqrt(Math.min(1.4, dep / yearDepMax)) : 0;
+    }
+    if (m === "years" && Y) {
+      // colour by that day's balance: amber stations lost bikes, teal ones gained
+      const key = `y|${ui.year}|${d0}`;
+      if (key !== year.colorKey) {
+        year.colorKey = key;
+        for (let i = 0; i < Math.min(year.n, Y.stations); i++) {
+          const k = d0 * Y.stations + i, dep = Y.dep[k], arr = Y.arr[k];
+          const v = clamp((arr - dep) / Math.max(6, (arr + dep) * 0.5), -1, 1), av = Math.abs(v);
+          if (av < 0.12) tc.copy(COL.neutral).multiplyScalar(0.55);
+          else tc.copy(v < 0 ? COL.out : COL.in).lerp(v < 0 ? COL.outGlow : COL.inGlow, av * 0.5).multiplyScalar(0.6 + 0.6 * av);
+          year.pillars.setColorAt(i, tc);
+          year.caps.setColorAt(i, tc.multiplyScalar(1.3));
+        }
+        year.pillars.instanceColor!.needsUpdate = year.caps.instanceColor!.needsUpdate = true;
+      }
+    }
     const H = d.hist;
     for (let i = 0; i < hist.n; i++) {
-      if (!H || m === "live") hist.ht[i] = 0;
+      if (!H || m === "live" || m === "years") hist.ht[i] = 0;
       else if (m === "flows") hist.ht[i] = 6;
       else if (m === "rhythm") {
         const dep = (weekend ? H.depWe : H.depWd)[i * 24 + hour];
@@ -159,9 +197,10 @@ export function createStations(scene: THREE.Scene) {
     const k = 1 - Math.pow(0.0035, dt);
     updateSet(live, k);
     updateSet(hist, k);
+    updateSet(year, ui.mode === "years" && ui.playing ? 1 - Math.pow(0.0001, dt) : k);
     const sel = ui.selected ?? ui.hover;
     if (sel) {
-      const s = sel.set === "live" ? live : hist;
+      const s = setOf(sel.set);
       if (sel.i < s.n) {
         halo.visible = true;
         halo.position.set(s.x[sel.i], s.g[sel.i] + 3, s.z[sel.i]);
@@ -173,9 +212,9 @@ export function createStations(scene: THREE.Scene) {
 
   /** Screen-space picking: nearest pillar top or middle within `max` px. */
   const PV = new THREE.Vector3();
-  function pick(camera: THREE.Camera, W: number, H: number, px: number, py: number, mode: Mode, max = 16): { set: "live" | "hist"; i: number } | null {
-    const s = mode === "live" ? live : hist;
-    const set = mode === "live" ? "live" : "hist";
+  function pick(camera: THREE.Camera, W: number, H: number, px: number, py: number, mode: Mode, max = 16): { set: StationSet; i: number } | null {
+    const set: StationSet = mode === "live" ? "live" : mode === "years" ? "year" : "hist";
+    const s = setOf(set);
     let best = -1, bd = max * max;
     for (let i = 0; i < s.n; i++) {
       if (s.hc[i] < 0.5) continue;
@@ -194,17 +233,19 @@ export function createStations(scene: THREE.Scene) {
     group,
     live,
     hist,
+    year,
     setHistory,
     setLive,
+    setYear,
     update,
     pick,
     /** world position of a station foot (scene coords) */
-    foot(set: "live" | "hist", i: number) {
-      const s = set === "live" ? live : hist;
+    foot(set: StationSet, i: number) {
+      const s = setOf(set);
       return new THREE.Vector3(s.x[i], s.g[i], s.z[i]);
     },
-    height(set: "live" | "hist", i: number) {
-      return (set === "live" ? live : hist).hc[i];
+    height(set: StationSet, i: number) {
+      return setOf(set).hc[i];
     },
     get radius() { return radius; },
   };

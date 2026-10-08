@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { data } from "@/lib/store";
-import { loadHistory, startLive, tickLiveClock } from "@/lib/load";
+import { loadHistory, loadYearsIndex, startLive, tickLiveClock } from "@/lib/load";
 import { introCaption, refreshChapters, startStory } from "@/lib/story-controller";
 import { bindTip } from "@/lib/tip";
 import { Header } from "./Header";
@@ -28,6 +28,7 @@ export function Console(props: ConsoleProps) {
       if (s.meta !== prev.meta || s.hist !== prev.hist) refreshChapters();
     });
     loadHistory().catch((e) => console.error("history", e));
+    loadYearsIndex().catch((e) => console.error("years", e));
     startLive();
     return () => { stop(); unsub(); };
   }, []);

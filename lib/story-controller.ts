@@ -2,8 +2,9 @@
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { ui, data, type Mode } from "./store";
-import { buildChapters, HOME, MTLN, type Chapter } from "./chapters";
-import { tickLiveClock } from "./load";
+import { buildChapters, HOME, HOME_YEARS, MTLN, type Chapter } from "./chapters";
+import { loadYear, tickLiveClock } from "./load";
+import { yearCaption } from "./years-copy";
 import type { SceneHandle } from "@/scene";
 
 /** A story hour lasts this many real seconds: a day in ~2.6 minutes. */
@@ -25,6 +26,7 @@ const MODE_CAP: Record<Mode, Omit<Caption, "compact" | "cta">> = {
   flows: { tag: "Flows", step: "Explore", title: "Drag the clock", body: "The sun and the rides follow it." },
   rhythm: { tag: "Rhythm", step: "Explore", title: "Pick an hour of the week", body: "Pillars rise with average departures; arcs are the busiest corridors." },
   stations: { tag: "Stations", step: "Explore", title: "Follow the bikes downhill", body: "Tap any pillar for its average day." },
+  years: { tag: "Years", step: "Archive", title: "Every season since 2014", body: "Pick a year and press play to fast-forward through it." },
 };
 
 export const story = createStore<StoryState>(() => ({ chapters: [], caption: INTRO }));
@@ -57,7 +59,30 @@ export function setMode(m: Mode, fromTour = false) {
     ui.setState({ chapter: -1 });
     setCaption({ ...MODE_CAP[m], compact: true, cta: false });
   }
-  if (s.selected && (m === "live") !== (s.selected.set === "live")) ui.setState({ selected: null });
+  if (s.selected && s.selected.set !== (m === "live" ? "live" : m === "years" ? "year" : "hist")) ui.setState({ selected: null });
+  if (m === "years") {
+    if (ui.getState().year) selectYear(ui.getState().year);
+    if (!fromTour) scene?.flyTo(HOME_YEARS, 1600);
+  }
+}
+
+/** Years mode: switch year, keep the cursor on the same calendar day when that day had service. */
+export function selectYear(year: number) {
+  const s = ui.getState();
+  ui.setState({ year, selected: null });
+  void loadYear(year).then(() => {
+    const y = data.getState().yearSummary;
+    if (!y || y.year !== year) return;
+    const doy = (iso: string) => (Date.parse(iso + "T00:00:00Z") - Date.UTC(year, 0, 1)) / 86400_000;
+    const first = doy(y.firstDay), last = doy(y.lastDay);
+    // keep the same calendar day across years when it had service; otherwise start with the season
+    if (s.yday === 0 || s.yday < first || s.yday > last) ui.setState({ yday: doy(y.seasonFrom) });
+    if (ui.getState().mode === "years") setCaption({ ...yearCaption(y, data.getState().years), compact: false, cta: false });
+  });
+}
+
+export function setSecPerDay(v: number) {
+  ui.setState({ secPerDay: v });
 }
 
 export function setPlaying(on: boolean) {
@@ -83,6 +108,14 @@ export function play() {
   const chapters = story.getState().chapters;
   if (s.playing) return setPlaying(false);
   if (!chapters.length) return;
+  if (s.mode === "years") {
+    const y = data.getState().yearSummary;
+    if (!y) return;
+    const last = (Date.parse(y.lastDay + "T00:00:00Z") - Date.UTC(y.year, 0, 1)) / 86400_000;
+    if (s.yday >= last) ui.setState({ yday: (Date.parse(y.firstDay + "T00:00:00Z") - Date.UTC(y.year, 0, 1)) / 86400_000 });
+    setPlaying(true);
+    return;
+  }
   if (s.chapter < 0 && freePlay && (s.mode === "flows" || s.mode === "rhythm")) {
     // free play from the scrubber position
     if (s.minute >= 1439) ui.setState({ minute: 0 });
@@ -105,6 +138,11 @@ export function stepChapter(dir: 1 | -1) {
   const s = ui.getState(), n = story.getState().chapters.length;
   const k = s.chapter < 0 ? 0 : Math.max(0, Math.min(n - 1, s.chapter + dir));
   enterChapter(k, false);
+}
+
+export function scrubDay(yday: number) {
+  ui.setState({ yday });
+  if (ui.getState().playing) setPlaying(false);
 }
 
 export function scrubTo(minute: number) {
@@ -146,6 +184,13 @@ function tick(now: number) {
     let m = s.minute + (dt / SEC_PER_HOUR) * 60;
     if (m >= 1440) { m = 1439; setPlaying(false); }
     ui.setState({ minute: m });
+  } else if (s.mode === "years") {
+    const y = data.getState().yearSummary;
+    if (!y || !data.getState().yearDays) return;
+    const last = (Date.parse(y.lastDay + "T00:00:00Z") - Date.UTC(y.year, 0, 1)) / 86400_000 + 0.99;
+    const d = s.yday + dt / s.secPerDay;
+    if (d >= last) { ui.setState({ yday: last }); setPlaying(false); }
+    else ui.setState({ yday: d });
   } else setPlaying(false);
 }
 
