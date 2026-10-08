@@ -29,7 +29,8 @@ vec3 arcTan(vec3 a, vec3 b, float u){
   return normalize(vec3(t.x, (b.y - a.y) + arcH(a, b) * (4. - 8. * u), t.y));
 }`;
 
-const COLORS = /* glsl */ `const vec3 OUTG = vec3(1., .616, .424); const vec3 ING = vec3(.435, .847, .937);`;
+// glow ends of the leave/dock pair, a touch more saturated than the UI swatches so they hold up in daylight
+const COLORS = /* glsl */ `const vec3 OUTG = vec3(1., .52, .3); const vec3 ING = vec3(.3, .8, .95);`;
 
 function ribbonBase() {
   const g = new THREE.InstancedBufferGeometry();

@@ -50,7 +50,7 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
   const camera = new THREE.PerspectiveCamera(30, 1, 20, 400000);
   const controls = new OrbitControls(camera, canvas);
   Object.assign(controls, {
-    enableDamping: true, dampingFactor: 0.07, maxPolarAngle: 1.36, minDistance: 350, maxDistance: 70000,
+    enableDamping: true, dampingFactor: 0.07, maxPolarAngle: 1.36, minDistance: 350, maxDistance: 52000,
     screenSpacePanning: false, zoomToCursor: true, rotateSpeed: 0.55, panSpeed: 0.9,
   });
 
@@ -143,7 +143,11 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
   /* ---------- content ---------- */
   setLoad(0.04, "Reading the river");
   const index = (await (await fetch("/city/index.json")).json()) as CityIndex;
-  const [t, mask] = await Promise.all([loadTerrain(index), loadMaskTexture(`/city/${index.mask.file}`, renderer)]);
+  const [t, mask, bikes] = await Promise.all([
+    loadTerrain(index),
+    loadMaskTexture(`/city/${index.mask.file}`, renderer),
+    loadMaskTexture(`/city/${index.mask.bikes}`, renderer),
+  ]);
   terrain = t;
   const mpp = index.mask.m ?? 10;
   const shared: Shared = {
@@ -151,6 +155,7 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     uNight: { value: 0 },
     uHorizon: { value: new THREE.Color() },
     uMask: { value: mask },
+    uBikes: { value: bikes },
     uMaskRect: { value: new THREE.Vector4(index.bounds.x0, index.bounds.y1 - index.mask.height * mpp, index.mask.width * mpp, index.mask.height * mpp) },
     uLed: { value: new THREE.Color("#f3dcb0") },
     uCycleGlow: { value: 0.7 },
@@ -294,6 +299,13 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
       idle = false;
     },
     get quality() { return q; },
+    /** dev: raw access for debugging */
+    get debug() { return { scene, camera, renderer, sky }; },
+    /** dev: toggle post passes */
+    post(opts: { ao?: boolean; bloom?: boolean }) {
+      if (gtao && opts.ao !== undefined) gtao.enabled = opts.ao;
+      if (opts.bloom !== undefined) bloom.enabled = opts.bloom;
+    },
     get stats() { return city.stats; },
     dispose() {
       cancelAnimationFrame(raf);

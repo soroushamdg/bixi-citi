@@ -8,8 +8,9 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 /** sky keyframes by solar altitude (deg): zenith, horizon */
 const SKYK: Array<[number, string, string]> = [
-  [-18, "#04060b", "#0a0e18"], [-8, "#08101f", "#18213b"], [-2, "#18264b", "#6e4c58"], [2, "#294372", "#e49a66"],
-  [9, "#36609a", "#d6b08c"], [22, "#3d6ca5", "#a9bed1"], [60, "#3a68a3", "#9cb6cc"],
+  // kept a few steps darker than a real sky so the model sits in the console's dusk
+  [-18, "#04060b", "#0a0e18"], [-8, "#08101f", "#151d31"], [-2, "#16223f", "#57404b"], [2, "#22385e", "#b47a58"],
+  [9, "#2c4d78", "#9a8673"], [22, "#30557f", "#71879a"], [60, "#2e537d", "#677d92"],
 ];
 
 export interface SunState {
@@ -52,7 +53,7 @@ export function createSky(scene: THREE.Scene) {
   const cA = new THREE.Color(), cB = new THREE.Color();
   const sunDir = new THREE.Vector3();
   const state: SunState = { alt: 0, az: 0, day: 0, night: 0, gold: 0 };
-  let lastMs = NaN;
+  let lastMs = -Infinity;
 
   function skyCols(a: number, top: THREE.Color, hor: THREE.Color) {
     let k = 0;

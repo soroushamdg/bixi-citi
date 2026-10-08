@@ -104,7 +104,7 @@ export async function createCity(scene: THREE.Scene, index: CityIndex, shared: S
   const blocks = new THREE.InstancedMesh(box, blockMaterial(shared, globalGrow, hidden), b.count);
   const M = new THREE.Matrix4(), Q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -((GRID_BEARING - 360) * Math.PI) / 180);
   const P = new THREE.Vector3(), S = new THREE.Vector3(), C = new THREE.Color();
-  const low = new THREE.Color("#d2c8b9"), low2 = new THREE.Color("#c0b5a5"), mid = new THREE.Color("#bcb8b1"), tow = new THREE.Color("#a1adbc");
+  const low = new THREE.Color("#c2b8aa"), low2 = new THREE.Color("#b1a798"), mid = new THREE.Color("#ada9a3"), tow = new THREE.Color("#94a0ae");
   for (let i = 0; i < b.count; i++) {
     const h = b.height[i] * BUILDING_EX;
     P.set(b.x[i], b.base[i] * EXZ - 1.5, -b.y[i]);

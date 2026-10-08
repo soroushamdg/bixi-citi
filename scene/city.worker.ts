@@ -8,14 +8,14 @@ import { decodeTile } from "@/lib/formats/city";
 import { BUILDING_EX, EXZ } from "@/lib/geo";
 
 const PALETTE: Array<[number, number, number]> = [
-  [0.824, 0.784, 0.725], // house: warm limestone
-  [0.737, 0.722, 0.694], // mid-rise
-  [0.631, 0.678, 0.737], // tower: cool glass
-  [0.812, 0.765, 0.678], // civic
-  [0.706, 0.69, 0.659], // industrial
-  [0.66, 0.7, 0.75], // building:part (mostly towers)
+  [0.76, 0.722, 0.668], // house: warm limestone
+  [0.68, 0.666, 0.64], // mid-rise
+  [0.58, 0.624, 0.68], // tower: cool glass
+  [0.75, 0.705, 0.625], // civic
+  [0.65, 0.636, 0.607], // industrial
+  [0.61, 0.645, 0.69], // building:part (mostly towers)
 ];
-const ALT: [number, number, number] = [0.753, 0.71, 0.647];
+const ALT: [number, number, number] = [0.695, 0.655, 0.597];
 
 async function inflate(buf: ArrayBuffer): Promise<ArrayBuffer> {
   const h = new Uint8Array(buf, 0, 2);

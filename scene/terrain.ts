@@ -11,6 +11,7 @@ export interface Shared {
   uNight: { value: number };
   uHorizon: { value: THREE.Color };
   uMask: { value: THREE.Texture | null };
+  uBikes: { value: THREE.Texture | null };
   /** world rect of the mask texture: x0, y0 (south), width, height in metres */
   uMaskRect: { value: THREE.Vector4 };
   uLed: { value: THREE.Color };
@@ -34,9 +35,13 @@ export async function loadMaskTexture(url: string, renderer: THREE.WebGLRenderer
 }
 
 const MASK_GLSL = /* glsl */ `
-uniform sampler2D uMask;
+uniform sampler2D uMask, uBikes;
 uniform vec4 uMaskRect;
-vec4 maskAt(vec3 w){ return texture2D(uMask, vec2((w.x - uMaskRect.x) / uMaskRect.z, (-w.z - uMaskRect.y) / uMaskRect.w)); }
+/* r land, g green, b streets, a bike network */
+vec4 maskAt(vec3 w){
+  vec2 uv = vec2((w.x - uMaskRect.x) / uMaskRect.z, (-w.z - uMaskRect.y) / uMaskRect.w);
+  return vec4(texture2D(uMask, uv).rgb, texture2D(uBikes, uv).r);
+}
 `;
 
 export function createTerrain(t: Terrain, shared: Shared, q: Quality) {
@@ -93,7 +98,7 @@ export function createTerrain(t: Terrain, shared: Shared, q: Quality) {
       )
       .replace(
         "#include <emissivemap_fragment>",
-        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uLed * bikeGlow * uCycleGlow * (0.15 + uNight * 0.9);",
+        "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uLed * bikeGlow * uCycleGlow * (0.06 + uNight * 0.32);",
       );
   };
   const mesh = new THREE.Mesh(g, mat);
