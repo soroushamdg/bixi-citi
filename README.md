@@ -1,6 +1,6 @@
-# BIXI Story
+# BIXI Citi
 
-An unofficial, interactive 3D portrait of [BIXI Montréal](https://bixi.com) bike share, built from open data.
+Storytelling with BIXI data: an unofficial, interactive 3D portrait of [BIXI Montréal](https://bixi.com) bike share, built from open data.
 
 - **Live**: the current state of every station from BIXI's GBFS feed. A station pulses when its bike count drops (a bike left) or rises (a bike docked) between two snapshots. BIXI publishes no live trips, so none are drawn.
 - **Flows**: every ride of one real summer day from the yearly trip history, played back over the city with the sun moving with the clock. One arc is one ride.
@@ -12,9 +12,9 @@ Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from
 
 Design & build: **Sora Bon (Soroush Bonab)** · [linktr.ee/soroucsh](https://linktr.ee/soroucsh)
 
-[![BIXI Story showreel: 30 seconds](video/poster.jpg)](video/bixi-story-showreel.mp4)
+[![BIXI Citi showreel: 30 seconds](video/poster.jpg)](video/bixi-citi-showreel.mp4)
 
-**Showreel**: [video/bixi-story-showreel.mp4](video/bixi-story-showreel.mp4), 30 s at 1080p60. It is made from the app itself (see [video/](video/README.md)).
+**Showreel**: [video/bixi-citi-showreel.mp4](video/bixi-citi-showreel.mp4), 30 s at 1080p60. On the site, the share button (top right) plays it. It is made from the app itself (see [video/](video/README.md)).
 
 Made for laptops and desktops. Phones get a short note asking to open it on a bigger screen, and load nothing else.
 
@@ -91,9 +91,11 @@ npm run history:years -- --all           # rebuild every year from zips already 
 | Path | What |
 | --- | --- |
 | `app/` | page shell, global styles, GBFS route handlers |
-| `components/` | console UI and SVG charts |
+| `components/` | console UI, SVG charts, tour, share sheet with the showreel player |
 | `lib/` | shared projection, binary formats, stores, data loading, story chapters, sun |
 | `scene/` | three.js scene: terrain, water, city LOD, stations, trips, pulses |
 | `scripts/` | city and history pipelines |
 | `public/city`, `public/data/history` | generated, committed assets |
+| `public/video` | the showreel the share sheet plays, and its poster |
+| `video/` | how the showreel is made: capture, composition, soundtrack, render |
 | `docs/` | the original brief and interactive mockup |

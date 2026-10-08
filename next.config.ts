@@ -18,6 +18,11 @@ const nextConfig: NextConfig = {
         headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       },
       {
+        // the showreel and its poster: cached at the edge, refreshed within a day if re-rendered
+        source: "/video/:file*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800" }],
+      },
+      {
         // the list of current files must stay fresh so a new 2026 pack is picked up
         source: "/data/years/index.json",
         headers: [{ key: "Cache-Control", value: "public, max-age=300, s-maxage=600, stale-while-revalidate=86400" }],

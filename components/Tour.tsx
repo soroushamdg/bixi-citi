@@ -18,7 +18,7 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  { title: "Welcome to BIXI Story", body: "Montréal's bike share, live right now and across every season since 2014. Here is where to start: it takes under a minute." },
+  { title: "Welcome to BIXI Citi", body: "Montréal's bike share, live right now and across every season since 2014. Here is where to start: it takes under a minute." },
   { target: ".basin", title: "The city", body: "Drag to turn, scroll or pinch to zoom. Every pillar is a BIXI station." },
   { target: ".deck .seg", title: "Five ways to look", body: "Live now, a real day of Flows, the weekly Rhythm, which Stations gain or lose bikes, and every past Year." },
   { target: ".deck .play", title: "Press play", body: "Play a real summer day as a short story, or fast-forward through a whole season in Years." },
@@ -26,7 +26,7 @@ const STEPS: Step[] = [
   { target: ".kpis", title: "The numbers", body: "Key figures for what you are looking at. The chips say where each comes from: LIVE, REAL or DERIVED." },
   { target: ".rail", title: "Details", body: "Charts for the current mode. Hover for exact values; click a day, hour or station to jump to it." },
   { target: '.mapctl [aria-label="Landmarks"]', title: "Landmarks and bridges", body: "Fly to hand-modelled places, from Notre-Dame to the Jacques Cartier Bridge." },
-  { target: ".head-right", title: "Make it yours", body: "Turn the map to Montréal north, switch between light and dark, or replay this tour with ?." },
+  { target: ".head-right", title: "Make it yours", body: "Turn the map to Montréal north, switch between light and dark, replay this tour with ?, or share it." },
   { title: "You're set", body: "Start with Live to see the network breathing, or press play for a day of real rides." },
 ];
 

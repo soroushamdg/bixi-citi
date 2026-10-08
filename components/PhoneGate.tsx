@@ -10,7 +10,7 @@ export function PhoneGate() {
     const url = location.origin + location.pathname;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "BIXI Story", text: "Open BIXI Story on a desktop", url });
+        await navigator.share({ title: "BIXI Citi", text: "Open BIXI Citi on a desktop", url });
         return;
       }
       await navigator.clipboard.writeText(url);
@@ -27,10 +27,10 @@ export function PhoneGate() {
           <BixiLogo className="glass-logo" title="BIXI" />
           <i className="glass-sheen" aria-hidden="true" />
         </span>
-        <span className="label gate-kicker">BIXI Story · desktop only</span>
+        <span className="label gate-kicker">BIXI Citi · desktop only</span>
         <h1 id="gate-title">Open this on a bigger screen</h1>
         <p>
-          BIXI Story draws a live 3D model of Montréal: 600,000 buildings, every station and millions of real rides. It is made for a laptop or
+          BIXI Citi tells the story of BIXI data on a live 3D model of Montréal: 600,000 buildings, every station and millions of real rides. It is made for a laptop or
           desktop, so it does not run on phones.
         </p>
         <button className="gate-btn" onClick={send}>{copied ? "Link copied" : "Send the link to yourself"}</button>

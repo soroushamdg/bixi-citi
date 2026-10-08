@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 
-export const UA = "bixi-story-build/1.0 (+https://github.com/soroushamdg; unofficial portfolio project)";
+export const UA = "bixi-citi-build/1.0 (+https://github.com/soroushamdg; unofficial portfolio project)";
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 

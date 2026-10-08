@@ -6,6 +6,7 @@ import { MTLN } from "@/lib/chapters";
 import { BixiLogo } from "./BixiLogo";
 import { ThemeToggle } from "./ThemeToggle";
 import { TourButton } from "./Tour";
+import { ShareButton } from "./Share";
 
 const fmt = new Intl.NumberFormat("en-CA");
 
@@ -58,7 +59,7 @@ export function Header({ stationsHint, tripsHint, dateHint }: { stationsHint: nu
               <BixiLogo className="glass-logo" title="BIXI" />
               <i className="glass-sheen" aria-hidden="true" />
             </span>
-            <span>STORY</span>
+            <span>CITI</span>
           </h1>
           <p className="tagline">
             Montréal, ride by ride. {fmt.format(n)} stations live, {fmt.format(tripsHint)} real rides on {dateHint}.
@@ -85,6 +86,7 @@ export function Header({ stationsHint, tripsHint, dateHint }: { stationsHint: nu
         </button>
         <TourButton />
         <ThemeToggle />
+        <ShareButton />
       </div>
     </header>
   );

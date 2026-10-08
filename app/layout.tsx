@@ -8,16 +8,25 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 const geistMono = Geist_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-geist-mono" });
 
 export const metadata: Metadata = {
-  title: "BIXI Story",
+  metadataBase: new URL("https://bixi-citi.vercel.app"),
+  title: "BIXI Citi",
   description:
-    "An unofficial, interactive 3D portrait of BIXI Montréal: live station status and a real day of rides from the open trip history.",
-  applicationName: "BIXI Story",
+    "Storytelling with BIXI Montréal data: an unofficial, interactive 3D portrait of live station status, a real day of rides and every season since 2014.",
+  applicationName: "BIXI Citi",
   authors: [{ name: "Sora Bon (Soroush Bonab)", url: "https://linktr.ee/soroucsh" }],
   creator: "Sora Bon (Soroush Bonab)",
   openGraph: {
-    title: "BIXI Story · Montréal, ride by ride",
-    description: "Live station pulses and a real day of BIXI rides over a 3D model of Montréal. Unofficial.",
+    title: "BIXI Citi · storytelling with BIXI data",
+    description: "Live stations, real rides and 13 seasons of BIXI Montréal over a 3D model of the city. Unofficial.",
     type: "website",
+    images: [{ url: "/video/poster.jpg", width: 1280, height: 720, alt: "BIXI Citi: live BIXI stations over a 3D model of Montréal at night" }],
+    videos: [{ url: "/video/bixi-citi-showreel.mp4", type: "video/mp4", width: 1920, height: 1080 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "BIXI Citi · storytelling with BIXI data",
+    description: "Live stations, real rides and 13 seasons of BIXI Montréal over a 3D model of the city. Unofficial.",
+    images: ["/video/poster.jpg"],
   },
 };
 
