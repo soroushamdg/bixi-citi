@@ -3,6 +3,7 @@ import { useEffect, useMemo } from "react";
 import { useData, useUI, type Mode } from "@/lib/store";
 import { enterChapter, play, scrubDay, scrubTo, selectYear, setMode, setPlaying, setSecPerDay, stepChapter, useStory } from "@/lib/story-controller";
 import { dayLong } from "@/lib/years-copy";
+import { ChipProgress } from "./YearProgress";
 import { DAYS } from "@/lib/story";
 import { compass, montrealMs, sunPos, sunTimes } from "@/lib/sun";
 
@@ -60,6 +61,7 @@ function YearChips() {
         {idx?.years.map((y) => (
           <button key={y.year} aria-pressed={y.year === year} className={y.partial ? "partial" : undefined} title={y.partial ? `${y.year}, so far` : String(y.year)} onClick={() => selectYear(y.year)}>
             {y.year}
+            <ChipProgress year={y.year} />
           </button>
         ))}
       </div>

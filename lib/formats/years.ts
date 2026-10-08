@@ -1,18 +1,23 @@
 /**
- * Per-year archive (public/data/years/), written by scripts/history/years.ts.
+ * Per-year archive.
  *
- * {year}.json           YearSummary (below), including the station table
- * {year}.days.bin.gz    departures and arrivals per station per day
- *   Int32 magic 'BXYD', stations, days, firstDoy (day of year of row 0, Jan 1 = 0)
- *   Uint16 dep [days × stations] · Uint16 arr [days × stations]
- * {year}.sample.bin.gz  a fixed-size random sample of each day's rides, for the fast-forward
- *   Int32 magic 'BXYS', count, perDay, 0
- *   Uint16 doy [count] · Uint16 minute of day [count] · Uint16 from [count] · Uint16 to [count]
- * index.json            YearsIndex: one line per year, oldest first
+ * Build side (committed, not served): data/years/{year}.json, the full YearSummary with its station table.
+ * Served (public/data/years/):
+ *   index.json                   YearsIndex: one line per year + the file names below (short cache)
+ *   summaries.{hash}.json        every YearSummary without stations, so the panel switches instantly
+ *   {year}.{hash}.pack.gz        one file per year for the map: stations, departures per station-day,
+ *                                that day's balance, and a fixed random sample of rides
+ * Hashed files never change, so browsers keep them for a year; past years are built once.
+ *
+ * pack (little-endian, then gzip):
+ *   Int32 magic 'BXYP', version, stations, days, firstDoy, sampleCount, jsonBytes, 0
+ *   UTF-8 JSON {name[], lat[], lon[], trips[]}, padded to 4
+ *   departures: station-major, delta-coded along time, as two byte planes (low, high)   [stations × days × 2]
+ *   balance: Int8 −4…4 (lost … gained), station-major                                    [stations × days]
+ *   sample: Uint16 rides per day [days] · Uint16 minute delta within the day · Uint16 from · Uint16 to
  */
-export const YDAYS_MAGIC = 0x44595842;
-export const YSAMPLE_MAGIC = 0x53595842;
-export const SAMPLE_PER_DAY = 320;
+export const YPACK_MAGIC = 0x50595842;
+export const SAMPLE_PER_DAY = 200;
 
 export interface DayStat { date: string; trips: number; weekday: number }
 
@@ -53,7 +58,10 @@ export interface YearSummary {
   stationsActive: number;
   topStations: Array<{ i: number; name: string; departures: number }>;
   topRoutes: Array<{ from: number; to: number; fromName: string; toName: string; trips: number }>;
-  stations: { name: string[]; lat: number[]; lon: number[] };
+  /** build side only; the browser gets stations from the year's pack */
+  stations?: YearStations;
+  /** build side: this year's pack file */
+  pack?: { file: string; bytes: number };
 }
 
 export interface YearsIndex {
@@ -73,44 +81,90 @@ export interface YearsIndex {
     growth: number | null;
     url: string;
     etag: string | null;
+    pack: { file: string; bytes: number };
   }>;
   allTimePeak: DayStat & { year: number };
+  /** every year's summary in one file */
+  summaries: { file: string; bytes: number };
 }
 
-export interface YearDays { stations: number; days: number; firstDoy: number; dep: Uint16Array; arr: Uint16Array }
+export interface YearDays {
+  stations: number;
+  days: number;
+  firstDoy: number;
+  /** departures, day-major: dep[day * stations + station] */
+  dep: Uint16Array;
+  /** that day's balance, −4 (lost bikes) … 4 (gained), day-major */
+  bal: Int8Array;
+}
 export interface YearSample { count: number; doy: Uint16Array; minute: Uint16Array; from: Uint16Array; to: Uint16Array }
+export interface YearStations { name: string[]; lat: number[]; lon: number[]; trips: number[] }
+export interface YearPack { stations: YearStations; days: YearDays; sample: YearSample }
 
-export function encodeYearDays(stations: number, days: number, firstDoy: number, dep: Uint16Array, arr: Uint16Array): Uint8Array {
-  const buf = new ArrayBuffer(16 + stations * days * 4);
-  new Int32Array(buf, 0, 4).set([YDAYS_MAGIC, stations, days, firstDoy]);
-  new Uint16Array(buf, 16, stations * days).set(dep);
-  new Uint16Array(buf, 16 + stations * days * 2, stations * days).set(arr);
-  return new Uint8Array(buf);
-}
-export function decodeYearDays(buf: ArrayBuffer): YearDays {
-  const [magic, stations, days, firstDoy] = new Int32Array(buf, 0, 4);
-  if (magic !== YDAYS_MAGIC) throw new Error("not a year-days file");
-  return { stations, days, firstDoy, dep: new Uint16Array(buf, 16, stations * days), arr: new Uint16Array(buf, 16 + stations * days * 2, stations * days) };
+const pad4 = (n: number) => (n + 3) & ~3;
+
+export function encodeYearPack(st: YearStations, days: number, firstDoy: number, depDayMajor: Uint16Array, arrDayMajor: Uint16Array, sample: { doy: number[]; minute: number[]; from: number[]; to: number[] }): Uint8Array {
+  const N = st.name.length, D = days, S = sample.doy.length;
+  const json = new TextEncoder().encode(JSON.stringify(st));
+  const offJson = 32, offDep = offJson + pad4(json.length), offBal = offDep + N * D * 2, offCnt = offBal + pad4(N * D);
+  const offMin = offCnt + pad4(D * 2), offFrom = offMin + pad4(S * 2), offTo = offFrom + pad4(S * 2), size = offTo + pad4(S * 2);
+  const buf = new ArrayBuffer(size), u8 = new Uint8Array(buf);
+  new Int32Array(buf, 0, 8).set([YPACK_MAGIC, 1, N, D, firstDoy, S, json.length, 0]);
+  u8.set(json, offJson);
+  const bal = new Int8Array(buf, offBal, N * D);
+  for (let i = 0; i < N; i++) {
+    let prev = 0;
+    for (let d = 0; d < D; d++) {
+      const k = d * N + i, o = i * D + d, a = depDayMajor[k], b = arrDayMajor[k];
+      const delta = (a - prev) & 0xffff;
+      prev = a;
+      u8[offDep + o] = delta & 255;
+      u8[offDep + N * D + o] = delta >> 8;
+      bal[o] = a + b ? Math.round(((b - a) / (a + b)) * 4) : 0;
+    }
+  }
+  const cnt = new Uint16Array(buf, offCnt, D), mins = new Uint16Array(buf, offMin, S), from = new Uint16Array(buf, offFrom, S), to = new Uint16Array(buf, offTo, S);
+  let prevDay = -1, prevMin = 0;
+  for (let k = 0; k < S; k++) {
+    const d = sample.doy[k] - firstDoy;
+    cnt[d]++;
+    if (d !== prevDay) { prevDay = d; prevMin = 0; }
+    mins[k] = sample.minute[k] - prevMin;
+    prevMin = sample.minute[k];
+    from[k] = sample.from[k];
+    to[k] = sample.to[k];
+  }
+  return u8;
 }
 
-export function encodeYearSample(doy: number[], minute: number[], from: number[], to: number[], perDay: number): Uint8Array {
-  const n = doy.length;
-  const buf = new ArrayBuffer(16 + n * 8);
-  new Int32Array(buf, 0, 4).set([YSAMPLE_MAGIC, n, perDay, 0]);
-  new Uint16Array(buf, 16, n).set(doy);
-  new Uint16Array(buf, 16 + n * 2, n).set(minute);
-  new Uint16Array(buf, 16 + n * 4, n).set(from);
-  new Uint16Array(buf, 16 + n * 6, n).set(to);
-  return new Uint8Array(buf);
-}
-export function decodeYearSample(buf: ArrayBuffer): YearSample {
-  const [magic, count] = new Int32Array(buf, 0, 2);
-  if (magic !== YSAMPLE_MAGIC) throw new Error("not a year-sample file");
+export function decodeYearPack(buf: ArrayBuffer): YearPack {
+  const [magic, , N, D, firstDoy, S, jsonBytes] = new Int32Array(buf, 0, 8);
+  if (magic !== YPACK_MAGIC) throw new Error("not a year pack");
+  const u8 = new Uint8Array(buf);
+  const offJson = 32, offDep = offJson + pad4(jsonBytes), offBal = offDep + N * D * 2, offCnt = offBal + pad4(N * D);
+  const offMin = offCnt + pad4(D * 2), offFrom = offMin + pad4(S * 2), offTo = offFrom + pad4(S * 2);
+  const stations = JSON.parse(new TextDecoder().decode(u8.subarray(offJson, offJson + jsonBytes))) as YearStations;
+  const balS = new Int8Array(buf, offBal, N * D);
+  const dep = new Uint16Array(N * D), bal = new Int8Array(N * D);
+  for (let i = 0; i < N; i++) {
+    let acc = 0;
+    for (let d = 0; d < D; d++) {
+      const o = i * D + d;
+      acc = (acc + (u8[offDep + o] | (u8[offDep + N * D + o] << 8))) & 0xffff;
+      dep[d * N + i] = acc;
+      bal[d * N + i] = balS[o];
+    }
+  }
+  const cnt = new Uint16Array(buf, offCnt, D), mins = new Uint16Array(buf, offMin, S);
+  const doy = new Uint16Array(S), minute = new Uint16Array(S);
+  let k = 0;
+  for (let d = 0; d < D; d++) {
+    let m = 0;
+    for (let c = 0; c < cnt[d]; c++, k++) { m += mins[k]; doy[k] = d + firstDoy; minute[k] = m; }
+  }
   return {
-    count,
-    doy: new Uint16Array(buf, 16, count),
-    minute: new Uint16Array(buf, 16 + count * 2, count),
-    from: new Uint16Array(buf, 16 + count * 4, count),
-    to: new Uint16Array(buf, 16 + count * 6, count),
+    stations,
+    days: { stations: N, days: D, firstDoy, dep, bal },
+    sample: { count: S, doy, minute, from: new Uint16Array(buf, offFrom, S).slice(), to: new Uint16Array(buf, offTo, S).slice() },
   };
 }

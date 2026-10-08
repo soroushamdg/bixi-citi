@@ -1,7 +1,6 @@
 "use client";
 import { data, ui, type HistStations, type Rhythm } from "./store";
 import { decodeDay, decodeFlows, DAY_CHUNKS } from "./formats/history";
-import { decodeYearDays, decodeYearSample, type YearSummary, type YearsIndex } from "./formats/years";
 import { diffSnapshots, scheduleReplay, type ReplayPulse } from "./live/diff";
 import type { LiveStatus, StationInfo } from "./gbfs";
 import type { HistoryMeta } from "./story";
@@ -38,34 +37,6 @@ export async function loadHistory() {
     data.setState({ day: next });
   }
   data.setState({ flows: decodeFlows(await fetchGz(`${HIST}/flows.bin.gz`)) });
-}
-
-const YEARS = "/data/years";
-
-export async function loadYearsIndex() {
-  const res = await fetch(`${YEARS}/index.json`);
-  if (!res.ok) return;
-  const years = (await res.json()) as YearsIndex;
-  data.setState({ years });
-  if (!ui.getState().year && years.years.length) {
-    // start on the latest complete year
-    const full = [...years.years].reverse().find((y) => !y.partial) ?? years.years[years.years.length - 1];
-    ui.setState({ year: full.year });
-  }
-}
-
-let yearToken = 0;
-/** Load one year's summary, station-day matrix and ride sample; later calls win. */
-export async function loadYear(year: number) {
-  const token = ++yearToken;
-  if (data.getState().yearSummary?.year === year) return;
-  data.setState({ yearSummary: null, yearDays: null, yearSample: null });
-  const summary = (await (await fetch(`${YEARS}/${year}.json`)).json()) as YearSummary;
-  if (token !== yearToken) return;
-  data.setState({ yearSummary: summary });
-  const [days, sample] = await Promise.all([fetchGz(`${YEARS}/${year}.days.bin.gz`), fetchGz(`${YEARS}/${year}.sample.bin.gz`)]);
-  if (token !== yearToken) return;
-  data.setState({ yearDays: decodeYearDays(days), yearSample: decodeYearSample(sample) });
 }
 
 /** Pair every history station with the live station within 60 m (same dock, maybe renamed). */

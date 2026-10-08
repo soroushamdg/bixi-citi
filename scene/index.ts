@@ -192,12 +192,12 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
   let yearKey = "";
   const syncData = () => {
     const d = data.getState();
-    const yk = `${d.yearSummary?.year ?? 0}|${d.yearDays ? 1 : 0}|${d.yearSample ? 1 : 0}`;
+    const yk = `${d.yearSummary?.year ?? 0}|${d.yearStations?.name.length ?? 0}|${d.yearDays ? d.yearDays.firstDoy : -1}|${d.yearSample?.count ?? 0}`;
     if (yk !== yearKey) {
       yearKey = yk;
       stations.setYear(d, terrain!);
       yearTrips.clear();
-      if (d.yearSummary && d.yearSample) {
+      if (d.yearStations && d.yearSample) {
         const S = d.yearSample;
         const start = new Float32Array(S.count), dur = new Float32Array(S.count).fill(YEAR_ARC);
         for (let k = 0; k < S.count; k++) start[k] = S.doy[k] * 1440 + S.minute[k];

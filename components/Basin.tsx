@@ -8,6 +8,7 @@ import { BRIDGES } from "@/lib/bridges";
 import { HOME } from "@/lib/chapters";
 import { hideTip, row, showTip, title } from "@/lib/tip";
 import { StationCard } from "./StationCard";
+import { YearProgress } from "./YearProgress";
 
 function YearsLegend() {
   const y = useData((d) => d.yearSummary);
@@ -57,14 +58,15 @@ const LEGEND = {
 function stationTip(sel: Sel) {
   const d = data.getState(), s = ui.getState();
   if (sel.set === "year") {
-    const y = d.yearSummary, Y = d.yearDays;
-    if (!y) return "";
-    let html = title(y.stations.name[sel.i] ?? "Station");
+    const y = d.yearSummary, Y = d.yearDays, st = d.yearStations;
+    if (!y || !st) return "";
+    let html = title(st.name[sel.i] ?? "Station");
     const k = Math.floor(s.yday) - (Y?.firstDoy ?? 0);
     if (Y && k >= 0 && k < Y.days && sel.i < Y.stations) {
-      html += row("Bikes taken that day", Y.dep[k * Y.stations + sel.i]) + row("Bikes returned", Y.arr[k * Y.stations + sel.i]);
+      const b = Y.bal[k * Y.stations + sel.i];
+      html += row("Bikes taken that day", Y.dep[k * Y.stations + sel.i]) + row("Balance", b > 1 ? "gained bikes" : b < -1 ? "lost bikes" : "about even");
     }
-    const tot = (y.stations as { trips?: number[] }).trips?.[sel.i];
+    const tot = st.trips[sel.i];
     if (tot) html += row(`Departures in ${y.year}`, tot.toLocaleString("en-CA"));
     return html;
   }
@@ -209,6 +211,7 @@ export function Basin() {
         </svg>
       </div>
       <StationCard />
+      <YearProgress />
       <div className="watermark">Unofficial · Map © OpenStreetMap contributors</div>
     </section>
   );

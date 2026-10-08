@@ -6,18 +6,22 @@
  *   npx tsx scripts/history/years.ts --all      # every zip in .cache/history (urls from .cache/history/urls.txt)
  *   npx tsx scripts/history/years.ts --index    # rebuild index.json from the per-year files
  */
-import { mkdir, readFile, readdir, stat as fsStat, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, stat as fsStat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { basename, join } from "node:path";
 import { gunzipSync, gzipSync } from "node:zlib";
 import { haversine, project } from "../../lib/geo";
 import { decodeTerrain, surfaceAt } from "../../lib/formats/terrain";
 import {
-  SAMPLE_PER_DAY, encodeYearDays, encodeYearSample, type DayStat, type YearSummary, type YearsIndex,
+  SAMPLE_PER_DAY, encodeYearPack, type DayStat, type YearStations, type YearSummary, type YearsIndex,
 } from "../../lib/formats/years";
 import { StationRegistry, dayISO, readTrips, weekdayOf } from "./read-trips";
 
 const OUT = "public/data/years";
+/** build-side summaries with station tables: committed, never served */
+const SRC = "data/years";
+const hash = (b: Uint8Array) => createHash("sha1").update(b).digest("hex").slice(0, 10);
 const args = Object.fromEntries(
   process.argv.slice(2).reduce<string[][]>((acc, a, i, all) => (a.startsWith("--") ? [...acc, [a.slice(2), all[i + 1]?.startsWith("--") ? "1" : all[i + 1] ?? "1"]] : acc), []),
 );
@@ -180,22 +184,35 @@ async function processYear(zip: string, year: number, src: { url: string; etag: 
     stationsActive: stTrips.filter((v) => v > 0).length,
     topStations,
     topRoutes,
-    stations: { name: reg.name, lat: reg.lat.map((v) => +v.toFixed(6)), lon: reg.lon.map((v) => +v.toFixed(6)) },
+    stations: { name: reg.name, lat: reg.lat.map((v) => +v.toFixed(6)), lon: reg.lon.map((v) => +v.toFixed(6)), trips: stTrips },
   };
-  // per-station totals ride along for tooltips and year-over-year station counts
-  (summary.stations as YearSummary["stations"] & { trips: number[] }).trips = stTrips;
 
   await mkdir(OUT, { recursive: true });
-  await writeFile(join(OUT, `${year}.json`), JSON.stringify(summary));
-  await writeFile(join(OUT, `${year}.days.bin.gz`), gzipSync(encodeYearDays(N, days, first, dep, arr), { level: 9 }));
-  await writeFile(join(OUT, `${year}.sample.bin.gz`), gzipSync(encodeYearSample(sDoy, sMin, sSt, sEn, SAMPLE_PER_DAY), { level: 9 }));
+  // one hashed pack per year for the browser; replace any older pack of the same year
+  const pack = gzipSync(encodeYearPack(summary.stations as YearStations, days, first, dep, arr, { doy: sDoy, minute: sMin, from: sSt, to: sEn }), { level: 9 });
+  const file = `${year}.${hash(pack)}.pack.gz`;
+  await mkdir(SRC, { recursive: true });
+  for (const f of await readdir(OUT)) if (f.startsWith(`${year}.`) && f !== file) await rm(join(OUT, f));
+  await writeFile(join(OUT, file), pack);
+  summary.pack = { file, bytes: pack.length };
+  await writeFile(join(SRC, `${year}.json`), JSON.stringify(summary));
   log(`${year}: ${n.toLocaleString()} trips, peak ${peakDays[0].date} (${peakDays[0].trips}), ${summary.stationsActive} stations, ${sDoy.length} sampled rides`);
 }
 
 async function buildIndex() {
-  const files = (await readdir(OUT)).filter((f) => /^\d{4}\.json$/.test(f)).sort();
-  const ys: Array<YearSummary & { stations: YearSummary["stations"] & { trips?: number[] } }> = [];
-  for (const f of files) ys.push(JSON.parse(await readFile(join(OUT, f), "utf8")));
+  const files = (await readdir(SRC)).filter((f) => /^\d{4}\.json$/.test(f)).sort();
+  const ys: Array<YearSummary & { stations: YearStations; pack: { file: string; bytes: number } }> = [];
+  for (const f of files) ys.push(JSON.parse(await readFile(join(SRC, f), "utf8")));
+  // every summary in one immutable file (without the station tables, which live in the packs)
+  const summaries = new TextEncoder().encode(JSON.stringify(ys.map((y) => {
+    const r: Partial<typeof y> = { ...y };
+    delete r.stations;
+    delete r.pack;
+    return r;
+  })));
+  const sumFile = `summaries.${hash(summaries)}.json`;
+  for (const f of await readdir(OUT)) if (f.startsWith("summaries.") && f !== sumFile) await rm(join(OUT, f));
+  await writeFile(join(OUT, sumFile), summaries);
   const idx: YearsIndex = {
     generatedAt: new Date().toISOString(),
     years: ys.map((y, k) => {
@@ -211,10 +228,11 @@ async function buildIndex() {
       }
       return {
         year: y.year, trips: y.trips, partial: latest && y.lastDay < `${y.year}-12-01`, months: y.months, stationsActive: y.stationsActive, newStations,
-        peak: y.peakDays[0], medianMin: y.medianMin, memberShare: y.memberShare, growth, url: y.source.url, etag: y.source.etag,
+        peak: y.peakDays[0], medianMin: y.medianMin, memberShare: y.memberShare, growth, url: y.source.url, etag: y.source.etag, pack: y.pack,
       };
     }),
     allTimePeak: ys.map((y) => ({ ...y.peakDays[0], year: y.year })).sort((a, b) => b.trips - a.trips)[0],
+    summaries: { file: sumFile, bytes: summaries.length },
   };
   await writeFile(join(OUT, "index.json"), JSON.stringify(idx, null, 1));
   log(`index.json: ${idx.years.length} years, all-time peak ${idx.allTimePeak.date} (${idx.allTimePeak.trips})`);

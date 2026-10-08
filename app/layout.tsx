@@ -11,6 +11,8 @@ export const metadata: Metadata = {
   description:
     "An unofficial, interactive 3D portrait of BIXI Montréal: live station status and a real day of rides from the open trip history.",
   applicationName: "BIXI Story",
+  authors: [{ name: "Sora Bon (Soroush Bonab)", url: "https://linktr.ee/soroucsh" }],
+  creator: "Sora Bon (Soroush Bonab)",
   openGraph: {
     title: "BIXI Story · Montréal, ride by ride",
     description: "Live station pulses and a real day of BIXI rides over a 3D model of Montréal. Unofficial.",

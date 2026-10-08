@@ -3,7 +3,8 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { ui, data, type Mode } from "./store";
 import { buildChapters, HOME, HOME_YEARS, MTLN, type Chapter } from "./chapters";
-import { loadYear, tickLiveClock } from "./load";
+import { tickLiveClock } from "./load";
+import { prefetch, showYear } from "./years-loader";
 import { LANDMARKS } from "./landmarks";
 import { yearCaption } from "./years-copy";
 import type { SceneHandle } from "@/scene";
@@ -69,19 +70,22 @@ export function setMode(m: Mode, fromTour = false) {
 
 /** Years mode: switch year, keep the cursor on the same calendar day when that day had service. */
 export function selectYear(year: number, fromStart = false) {
-  const s = ui.getState();
+  const prevDay = ui.getState().yday;
   ui.setState({ year, selected: null });
-  void loadYear(year).then(() => {
+  const place = () => {
     const y = data.getState().yearSummary;
     if (!y || y.year !== year) return;
-    const doy = (iso: string) => (Date.parse(iso + "T00:00:00Z") - Date.UTC(year, 0, 1)) / 86400_000;
-    const first = doy(y.firstDay), last = doy(y.lastDay);
-    // keep the same calendar day across years when it had service; otherwise start with the season
+    const first = doyOf(y.firstDay, year), last = doyOf(y.lastDay, year);
     if (fromStart) ui.setState({ yday: first });
-    else if (s.yday === 0 || s.yday < first || s.yday > last) ui.setState({ yday: doy(y.seasonFrom) });
+    else if (prevDay === 0 || prevDay < first || prevDay > last) ui.setState({ yday: doyOf(y.seasonFrom, year) });
     if (ui.getState().mode === "years") setCaption({ ...yearCaption(y, data.getState().years), compact: false, cta: false });
-  });
+  };
+  // numbers appear at once from the summaries file; the map data follows with a progress bar
+  const p = showYear(year);
+  if (data.getState().yearSummary?.year === year) place();
+  else void p.then(place);
 }
+const doyOf = (iso: string, year: number) => (Date.parse(iso + "T00:00:00Z") - Date.UTC(year, 0, 1)) / 86400_000;
 
 export function setSecPerDay(v: number) {
   ui.setState({ secPerDay: v });
@@ -209,9 +213,12 @@ function tick(now: number) {
     if (!y || !data.getState().yearDays) return;
     const last = (Date.parse(y.lastDay + "T00:00:00Z") - Date.UTC(y.year, 0, 1)) / 86400_000 + 0.99;
     const d = s.yday + dt / s.secPerDay;
+    // past 60 % of the season, make sure next year is on its way
+    const first = doyOf(y.firstDay, y.year);
+    const next = data.getState().years?.years.find((e) => e.year > y.year);
+    if (next && (d - first) / Math.max(1, last - first) > 0.6) prefetch([next.year]);
     if (d >= last) {
       // roll on into the next season, so play can run 2014 → today
-      const next = data.getState().years?.years.find((e) => e.year > y.year);
       if (next) selectYear(next.year, true);
       else { ui.setState({ yday: last }); setPlaying(false); }
     } else ui.setState({ yday: d });

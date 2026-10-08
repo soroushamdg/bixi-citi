@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-08T18:18:35.447Z",
+ "generatedAt": "2026-10-08T19:07:00.294Z",
  "years": [
   {
    "year": 2014,
@@ -26,7 +26,11 @@
    "memberShare": 0.884,
    "growth": null,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2014.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2014.c3466b4700.pack.gz",
+    "bytes": 264914
+   }
   },
   {
    "year": 2015,
@@ -53,7 +57,11 @@
    "memberShare": 0.837,
    "growth": 0.098,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2015.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2015.8c3bc0b90d.pack.gz",
+    "bytes": 266530
+   }
   },
   {
    "year": 2016,
@@ -80,7 +88,11 @@
    "memberShare": 0.808,
    "growth": 0.162,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2016.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2016.fd51d2c879.pack.gz",
+    "bytes": 268723
+   }
   },
   {
    "year": 2017,
@@ -107,7 +119,11 @@
    "memberShare": 0.811,
    "growth": 0.185,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2017.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2017.c3f8066f4c.pack.gz",
+    "bytes": 292639
+   }
   },
   {
    "year": 2018,
@@ -134,7 +150,11 @@
    "memberShare": 0.831,
    "growth": 0.113,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2018.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2018.2d42875b1b.pack.gz",
+    "bytes": 301814
+   }
   },
   {
    "year": 2019,
@@ -160,7 +180,11 @@
    "memberShare": 0.821,
    "growth": 0.086,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2019.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2019.18a431502b.pack.gz",
+    "bytes": 295651
+   }
   },
   {
    "year": 2020,
@@ -187,7 +211,11 @@
    "memberShare": 0.797,
    "growth": -0.44,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2020.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2020.0ec7c3c71a.pack.gz",
+    "bytes": 311837
+   }
   },
   {
    "year": 2021,
@@ -214,7 +242,11 @@
    "memberShare": 0.824,
    "growth": 0.676,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/06/Historique-BIXI-2021.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2021.f8e58273fa.pack.gz",
+    "bytes": 340261
+   }
   },
   {
    "year": 2022,
@@ -241,7 +273,11 @@
    "memberShare": null,
    "growth": 0.59,
    "url": "https://cdn.bixi.com/wp-content/uploads/2023/08/DonneesOuverte2022.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2022.45db4a877d.pack.gz",
+    "bytes": 357767
+   }
   },
   {
    "year": 2023,
@@ -269,7 +305,11 @@
    "memberShare": null,
    "growth": 0.299,
    "url": "https://cdn.bixi.com/wp-content/uploads/2024/01/DonneesOuvertes2023_12.zip",
-   "etag": null
+   "etag": null,
+   "pack": {
+    "file": "2023.f37f29eb13.pack.gz",
+    "bytes": 417428
+   }
   },
   {
    "year": 2024,
@@ -300,7 +340,11 @@
    "memberShare": null,
    "growth": 0.119,
    "url": "https://cdn.bixi.com/wp-content/uploads/2025/01/DonneesOuvertes2024_010203040506070809101112.zip",
-   "etag": "\"098c1677f7641bb6a14f36f67ed37ffa\""
+   "etag": null,
+   "pack": {
+    "file": "2024.a069d5beb0.pack.gz",
+    "bytes": 544540
+   }
   },
   {
    "year": 2025,
@@ -330,8 +374,12 @@
    "medianMin": 10.7,
    "memberShare": null,
    "growth": 0.078,
-   "url": "https://cdn.bixi.com/wp-content/uploads/2026/02/DonneesOuvertes2025_010203040506070809101112.zip",
-   "etag": "\"1bceb36fcad3060675471794d2a1326b\""
+   "url": "",
+   "etag": null,
+   "pack": {
+    "file": "2025.47efbc6e4f.pack.gz",
+    "bytes": 594224
+   }
   },
   {
    "year": 2026,
@@ -358,7 +406,11 @@
    "memberShare": null,
    "growth": 0.01,
    "url": "https://cdn.bixi.com/wp-content/uploads/2026/02/DonneesOuvertes2026_0102030405060708.zip",
-   "etag": "\"1c4d49bee8ffb3f4c1c41e1f83e36da3\""
+   "etag": null,
+   "pack": {
+    "file": "2026.71ffa62315.pack.gz",
+    "bytes": 422872
+   }
   }
  ],
  "allTimePeak": {
@@ -366,5 +418,9 @@
   "trips": 95837,
   "weekday": 2,
   "year": 2025
+ },
+ "summaries": {
+  "file": "summaries.ca665a1ea7.json",
+  "bytes": 64252
  }
 }

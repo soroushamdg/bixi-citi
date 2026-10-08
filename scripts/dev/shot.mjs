@@ -3,7 +3,7 @@
  * run a few steps, save screenshots, print console errors.
  *
  *   PLAYWRIGHT_BROWSERS_PATH=.cache/playwright node scripts/dev/shot.mjs [url] [steps…]
- * steps: wait:ms · click:selector · key:Space · shot:name · eval:js · size:WxH
+ * steps: wait:ms · click:selector · key:Space · shot:name · eval:js · size:WxH · throttle:kbps
  */
 import { chromium } from "playwright";
 import { mkdirSync } from "node:fs";
@@ -29,6 +29,12 @@ for (const s of steps.length ? steps : ["wait:12000", "shot:home"]) {
   else if (k === "shot") { await page.screenshot({ path: `${out}/${v}.png` }); console.log(`shot ${out}/${v}.png`); }
   else if (k === "eval") console.log("eval:", JSON.stringify(await page.evaluate(v)));
   else if (k === "size") { const [w, h] = v.split("x").map(Number); await page.setViewportSize({ width: w, height: h }); }
+  else if (k === "throttle") {
+    // throttle:kbps — slow the network to watch progress UI
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Network.enable");
+    await cdp.send("Network.emulateNetworkConditions", { offline: false, latency: 150, downloadThroughput: (+v * 1000) / 8, uploadThroughput: 100000 });
+  }
 }
 console.log(logs.slice(0, 40).join("\n") || "no console errors");
 await browser.close();

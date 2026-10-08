@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { data } from "@/lib/store";
-import { loadHistory, loadYearsIndex, startLive, tickLiveClock } from "@/lib/load";
+import { loadHistory, startLive, tickLiveClock } from "@/lib/load";
+import { loadYearsIndex } from "@/lib/years-loader";
 import { introCaption, refreshChapters, startStory } from "@/lib/story-controller";
 import { bindTip } from "@/lib/tip";
 import { Header } from "./Header";
@@ -9,6 +10,7 @@ import { Kpis } from "./Kpis";
 import { Basin } from "./Basin";
 import { Deck } from "./Deck";
 import { Rail } from "./Rail";
+import { Footer } from "./Footer";
 
 export interface ConsoleProps {
   stationsHint: number;
@@ -40,13 +42,7 @@ export function Console(props: ConsoleProps) {
         <Basin />
         <Deck />
         <Rail />
-        <footer className="foot">
-          <span><b>Stations</b> station_information.json</span>
-          <span><b>Counts</b> station_status.json</span>
-          <span><b>History</b> {props.sourceFile}</span>
-          <span><b>Map</b> © OpenStreetMap contributors</span>
-          <span className="sig">Unofficial · not affiliated with BIXI Montréal · Design &amp; build by Sora</span>
-        </footer>
+        <Footer />
       </div>
       <div className="tip" ref={tip} role="tooltip" />
     </>

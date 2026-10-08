@@ -12,6 +12,16 @@ const nextConfig: NextConfig = {
         source: "/:dir(city|data)/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800" }],
       },
+      {
+        // content-hashed year packs and summaries never change: keep them for a year
+        source: "/data/years/:file((?:\\d{4}|summaries)\\.[0-9a-f]{10}\\..+)",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
+      {
+        // the list of current files must stay fresh so a new 2026 pack is picked up
+        source: "/data/years/index.json",
+        headers: [{ key: "Cache-Control", value: "public, max-age=300, s-maxage=600, stale-while-revalidate=86400" }],
+      },
     ];
   },
 };

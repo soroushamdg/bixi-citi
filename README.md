@@ -10,6 +10,8 @@ An unofficial, interactive 3D portrait of [BIXI Montréal](https://bixi.com) bik
 
 Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from individual trips), or **DERIVED** (averages, or slopes computed from terrain).
 
+Design & build: **Sora Bon (Soroush Bonab)** · [linktr.ee/soroucsh](https://linktr.ee/soroucsh)
+
 > Unofficial and not affiliated with BIXI Montréal. Trip data: [BIXI open data](https://bixi.com/en/open-data/). Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright). Elevation: [AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/).
 
 ## How it works
@@ -30,7 +32,7 @@ Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from
 
 1. It reads the open-data page and lists every yearly zip. The current year's filename grows as months are added.
 2. It compares each zip's URL and ETag with what `public/data/years/index.json` was built from, and downloads only new or changed years. `cdn.bixi.com` blocks browser requests, so the download has to happen in CI.
-3. `scripts/history/years.ts` reads any of BIXI's file layouts (`scripts/history/read-trips.ts`: 2014–2020 station codes and local times, 2021's `emplacement_pk`, 2022 onward names, coordinates and epoch ms). Per year it writes a summary JSON, a station × day matrix of departures and arrivals, and a fixed random sample of 320 rides per day.
+3. `scripts/history/years.ts` reads any of BIXI's file layouts (`scripts/history/read-trips.ts`: 2014–2020 station codes and local times, 2021's `emplacement_pk`, 2022 onward names, coordinates and epoch ms). Each year is processed once: a build-side summary goes to `data/years/`, and the browser gets one content-hashed `public/data/years/{year}.{hash}.pack.gz` (stations, departures per station-day, that day's balance, 200 sampled rides per day) plus a shared `summaries.{hash}.json`. Hashed files are served `immutable`, so a past year downloads once per browser; only the current year's pack changes.
 4. For the newest year, `scripts/history/aggregate.ts` streams the ~2 GB CSV through `unzip -p` and keeps trips as typed columns, about 12 bytes per trip. It writes:
    - `meta.json`: totals, the story day, and per-chapter numbers that the captions quote.
    - `stations.json`: per-station hourly departures and arrivals for weekdays and weekends, plus net bikes per day.

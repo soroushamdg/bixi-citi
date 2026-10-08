@@ -90,9 +90,9 @@ export function createStations(scene: THREE.Scene) {
     }
   }
   function setYear(d: DataState, terrain: Terrain) {
-    const s = d.yearSummary;
+    const s = d.yearStations;
     if (!s) { year.n = 0; year.pillars.count = year.caps.count = 0; return; }
-    year.setPositions(s.stations.lat, s.stations.lon, terrain);
+    year.setPositions(s.lat, s.lon, terrain);
     if (d.yearDays) {
       const v = Array.from(d.yearDays.dep).filter((x) => x > 0).sort((a, b) => a - b);
       yearDepMax = v[Math.floor(v.length * 0.98)] || 1;
@@ -118,12 +118,13 @@ export function createStations(scene: THREE.Scene) {
     }
     if (m === "years" && Y) {
       // colour by that day's balance: amber stations lost bikes, teal ones gained
-      const key = `y|${ui.year}|${d0}`;
+      const key = `y|${ui.year}|${d0}|${Y.stations}`;
       if (key !== year.colorKey) {
         year.colorKey = key;
         for (let i = 0; i < Math.min(year.n, Y.stations); i++) {
-          const k = d0 * Y.stations + i, dep = Y.dep[k], arr = Y.arr[k];
-          const v = clamp((arr - dep) / Math.max(6, (arr + dep) * 0.5), -1, 1), av = Math.abs(v);
+          const k = d0 * Y.stations + i;
+          // balance is stored as −4…4; quiet stations stay neutral
+          const v = Y.dep[k] < 3 ? 0 : Y.bal[k] / 4, av = Math.abs(v);
           if (av < 0.12) tc.copy(COL.neutral).multiplyScalar(0.55);
           else tc.copy(v < 0 ? COL.out : COL.in).lerp(v < 0 ? COL.outGlow : COL.inGlow, av * 0.5).multiplyScalar(0.6 + 0.6 * av);
           year.pillars.setColorAt(i, tc);

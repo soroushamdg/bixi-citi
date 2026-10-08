@@ -5,7 +5,8 @@ import type { LiveStatus, StationInfo } from "./gbfs";
 import type { SnapshotDiff } from "./live/diff";
 import type { DayTrips, Flows } from "./formats/history";
 import type { HistoryMeta } from "./story";
-import type { YearDays, YearSample, YearSummary, YearsIndex } from "./formats/years";
+import type { YearDays, YearSample, YearStations, YearSummary, YearsIndex } from "./formats/years";
+import type { YearLoad } from "./years-loader";
 
 export type Mode = "live" | "flows" | "rhythm" | "stations" | "years";
 /** a station is either in the live GBFS network or in the trip history */
@@ -99,10 +100,15 @@ export interface DataState {
   flows: Flows | null;
   day: Array<DayTrips | null>;
   years: YearsIndex | null;
-  /** the selected year's files, null while loading */
+  /** every year's numbers (one small file) */
+  yearSummaries: Map<number, YearSummary> | null;
+  /** the selected year: numbers at once, map data when its pack is in */
   yearSummary: YearSummary | null;
   yearDays: YearDays | null;
   yearSample: YearSample | null;
+  yearStations: YearStations | null;
+  /** download state of every pack that was asked for */
+  yearLoads: Record<number, YearLoad>;
   /** history index -> live index (or -1) and back */
   histToLive: Int32Array;
   liveToHist: Int32Array;
@@ -123,9 +129,12 @@ export const data = createStore<DataState>(() => ({
   flows: null,
   day: [null, null, null, null],
   years: null,
+  yearSummaries: null,
   yearSummary: null,
   yearDays: null,
   yearSample: null,
+  yearStations: null,
+  yearLoads: {},
   histToLive: new Int32Array(0),
   liveToHist: new Int32Array(0),
 }));
