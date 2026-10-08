@@ -52,7 +52,7 @@ export function YearCalendar() {
             width={C}
             height={C}
             rx={1.2}
-            fill={k < 0 ? "#232833" : RAMP[k]}
+            fill={k < 0 ? "var(--cal-empty)" : RAMP[k]}
             stroke={c.d === yday ? LED : undefined}
             strokeWidth={c.d === yday ? 1.1 : undefined}
             style={{ cursor: c.v > 0 ? "pointer" : "default" }}

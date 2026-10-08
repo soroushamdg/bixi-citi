@@ -17,8 +17,8 @@ function YearsLegend() {
   const per = n ? Math.max(1, Math.round(n / SAMPLE_PER_DAY)) : 0;
   return (
     <>
-      <span className="li"><span className="sw" style={{ background: "#E0703F" }} />Lost bikes</span>
-      <span className="li"><span className="sw" style={{ background: "#2A9CB8" }} />Gained</span>
+      <span className="li"><span className="sw" style={{ background: "var(--out)" }} />Lost bikes</span>
+      <span className="li"><span className="sw" style={{ background: "var(--in)" }} />Gained</span>
       <span className="li">height = departures that day</span>
       {per > 0 && <span className="li">1 arc ≈ {per} rides</span>}
     </>
@@ -28,8 +28,8 @@ function YearsLegend() {
 const LEGEND = {
   live: (
     <>
-      <span className="li"><span className="sw" style={{ background: "#ff9d6c" }} />Bike leaves</span>
-      <span className="li"><span className="sw" style={{ background: "#6fd8ef" }} />Bike docks</span>
+      <span className="li"><span className="sw" style={{ background: "var(--out-glow)" }} />Bike leaves</span>
+      <span className="li"><span className="sw" style={{ background: "var(--in-glow)" }} />Bike docks</span>
       <span className="li">height = bikes docked</span>
     </>
   ),
@@ -47,8 +47,8 @@ const LEGEND = {
   ),
   stations: (
     <>
-      <span className="li"><span className="sw" style={{ background: "#E0703F" }} />Loses bikes</span>
-      <span className="li"><span className="sw" style={{ background: "#2A9CB8" }} />Gains bikes</span>
+      <span className="li"><span className="sw" style={{ background: "var(--out)" }} />Loses bikes</span>
+      <span className="li"><span className="sw" style={{ background: "var(--in)" }} />Gains bikes</span>
       <span className="li">height = average net per day</span>
     </>
   ),
@@ -205,9 +205,9 @@ export function Basin() {
       <div className="float legend">{LEGEND[mode]}</div>
       <div className="compass" title="True north">
         <svg ref={needle} viewBox="0 0 26 26">
-          <path d="M13 3l3.2 9.5H9.8z" fill="#f3dcb0" />
-          <path d="M13 23l-3.2-9.5h6.4z" fill="#6e778a" />
-          <circle cx="13" cy="13" r="1.6" fill="#1c2029" />
+          <path d="M13 3l3.2 9.5H9.8z" fill="var(--led)" />
+          <path d="M13 23l-3.2-9.5h6.4z" fill="var(--ink-3)" />
+          <circle cx="13" cy="13" r="1.6" fill="var(--console)" />
         </svg>
       </div>
       <StationCard />

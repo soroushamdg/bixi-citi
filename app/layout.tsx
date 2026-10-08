@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Unbounded } from "next/font/google";
 import "./globals.css";
+import { THEME_BOOT } from "@/components/ThemeToggle";
 
 const unbounded = Unbounded({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-unbounded" });
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
@@ -21,8 +22,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1c2029",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#e6e9ef" },
+    { media: "(prefers-color-scheme: dark)", color: "#1c2029" },
+  ],
+  colorScheme: "dark light",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -30,7 +34,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${unbounded.variable} ${geist.variable} ${geistMono.variable}`}>
+    <html lang="en" data-theme="auto" suppressHydrationWarning className={`${unbounded.variable} ${geist.variable} ${geistMono.variable}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

@@ -66,9 +66,9 @@ export function TripsPerHour({ label }: { label: string }) {
         <path d={`${geo.story}L${X1} ${Y1}L${X0} ${Y1}Z`} fill="url(#tph)" />
         <path d={geo.avg} fill="none" stroke={INK3} strokeWidth="1.5" strokeDasharray="3 3" />
         <path d={geo.story} fill="none" stroke={OUT} strokeWidth="2" strokeLinejoin="round" />
-        {hx !== null && <line x1={X(hx)} x2={X(hx)} y1={Y0} y2={Y1} stroke="#a6aebd" strokeOpacity=".5" strokeDasharray="2 3" />}
+        {hx !== null && <line x1={X(hx)} x2={X(hx)} y1={Y0} y2={Y1} stroke="var(--ink-2)" strokeOpacity=".5" strokeDasharray="2 3" />}
         <line x1={px} x2={px} y1={Y0 - 4} y2={Y1} stroke={LED} strokeWidth="1.4" />
-        <circle cx={px} cy={py} r="4" fill={LED} stroke="#1c2029" strokeWidth="2" />
+        <circle cx={px} cy={py} r="4" fill={LED} stroke="var(--console)" strokeWidth="2" />
         <rect x={X0} y={0} width={X1 - X0} height={Y1 + 6} fill="transparent" />
       </svg>
       <SrTable

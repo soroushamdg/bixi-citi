@@ -1,11 +1,12 @@
-export const INK3 = "#6e778a";
-export const INK2 = "#a6aebd";
-export const INK = "#e9ebf1";
-export const OUT = "#E0703F";
-export const IN = "#2A9CB8";
-export const LED = "#f3dcb0";
+/* theme tokens (see app/globals.css): charts follow light and dark mode */
+export const INK3 = "var(--ink-3)";
+export const INK2 = "var(--ink-2)";
+export const INK = "var(--ink)";
+export const OUT = "var(--out)";
+export const IN = "var(--in)";
+export const LED = "var(--led)";
 export const MONO = "var(--mono)";
-export const RAMP = ["#2b2624", "#4a2f24", "#6b3a26", "#8f4628", "#b5552c", "#d96836", "#f08a58", "#ffb38a"];
+export const RAMP = Array.from({ length: 8 }, (_, k) => `var(--ramp-${k})`);
 export const pad = (n: number) => String(n).padStart(2, "0");
 export const hhmm = (m: number) => {
   const v = ((Math.round(m) % 1440) + 1440) % 1440;

@@ -9,7 +9,7 @@ export function Meter({ bikes, ebikes, cap }: { bikes: number; ebikes: number; c
   const c = Math.max(1, cap);
   return (
     <span className="meter" aria-hidden="true">
-      <i style={{ width: `${((bikes - ebikes) / c) * 100}%`, background: "#a6aebd" }} />
+      <i style={{ width: `${((bikes - ebikes) / c) * 100}%`, background: "var(--ink-2)" }} />
       <i style={{ width: `${(ebikes / c) * 100}%`, background: "var(--led)" }} />
     </span>
   );
