@@ -55,7 +55,8 @@ export function createLabels(host: HTMLElement, terrain: Terrain) {
   function update(camera: THREE.PerspectiveCamera, W: number, H: number, camDist: number) {
     for (const L of items) {
       PV.copy(L.v).project(camera);
-      const inView = PV.z < 1 && PV.x > -1.1 && PV.x < 1.1 && PV.y > -1.1 && PV.y < 1.1;
+      // keep clear of the legend and watermark along the bottom edge
+      const inView = PV.z < 1 && PV.x > -1.1 && PV.x < 1.1 && PV.y < 1.1 && ((1 - PV.y) / 2) * H < H - 56;
       const zoomOk = camDist >= L.min * 0.8 && camDist <= L.max;
       if (!inView || !zoomOk) { L.d.style.opacity = "0"; continue; }
       const d = camera.position.distanceTo(L.v);

@@ -165,8 +165,8 @@ export function createTrips(scene: THREE.Scene) {
 
   function update(now: number, visible: boolean, camDist: number) {
     uniforms.uNow.value = now;
-    uniforms.uWidth.value = Math.min(22, Math.max(1.8, camDist * 0.0007));
-    uniforms.uHead.value = 46 * Math.min(2.6, Math.max(0.45, camDist / 9000));
+    uniforms.uWidth.value = Math.min(22, Math.max(1.2, camDist * 0.0007));
+    uniforms.uHead.value = 46 * Math.min(2.6, Math.max(0.16, camDist / 9000));
     uniforms.uOpacity.value += ((visible ? 1 : 0) - uniforms.uOpacity.value) * 0.15;
     const show = uniforms.uOpacity.value > 0.01;
     for (const b of buckets) {
