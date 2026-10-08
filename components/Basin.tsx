@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from "react";
 import { data, ui, useData, useUI, type Sel } from "@/lib/store";
 import { SAMPLE_PER_DAY } from "@/lib/formats/years";
-import { attachScene, getScene, play, resetView, useStory } from "@/lib/story-controller";
+import { LANDMARKS } from "@/lib/landmarks";
+import { attachScene, getScene, play, resetView, showLandmark, useStory } from "@/lib/story-controller";
 import { HOME } from "@/lib/chapters";
 import { hideTip, row, showTip, title } from "@/lib/tip";
 import { StationCard } from "./StationCard";
@@ -93,6 +94,7 @@ export function Basin() {
   const mode = useUI((s) => s.mode);
   const caption = useStory((s) => s.caption);
   const [failed, setFailed] = useState<string | null>(null);
+  const [places, setPlaces] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -163,11 +165,29 @@ export function Basin() {
         <button className="mapbtn" aria-label="Zoom out" onClick={() => getScene()?.zoom(1.6)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14" /></svg>
         </button>
+        <button className="mapbtn" aria-label="Landmarks" aria-expanded={places} onClick={() => setPlaces((v) => !v)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" /></svg>
+        </button>
         <button className="mapbtn" aria-label="Reset view" onClick={resetView}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" /></svg>
         </button>
       </div>
 
+      {places && (
+        <div className="float places" role="dialog" aria-label="Landmarks">
+          <span className="label">Landmarks · modelled by hand</span>
+          <ul>
+            {LANDMARKS.map((l) => (
+              <li key={l.key}>
+                <button onClick={() => { showLandmark(l.key); setPlaces(false); }} title={l.blurb}>
+                  <b>{l.name}</b>
+                  <span>{l.blurb}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="float legend">{LEGEND[mode]}</div>
       <div className="compass" title="True north">
         <svg ref={needle} viewBox="0 0 26 26">

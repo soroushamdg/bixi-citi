@@ -38,7 +38,9 @@ const PLACES: Array<[string, number, number, "" | "major" | "water" | "minor", n
   ["Pointe-aux-Trembles", 45.65, -73.505, "", 9000, 60000],
 ];
 
-export function createLabels(host: HTMLElement, terrain: Terrain) {
+export interface ExtraLabel { text: string; pos: THREE.Vector3; min: number; max: number; cls: string }
+
+export function createLabels(host: HTMLElement, terrain: Terrain, extra: ExtraLabel[] = []) {
   const el = document.createElement("div");
   el.className = "labels";
   el.setAttribute("aria-hidden", "true");
@@ -51,6 +53,13 @@ export function createLabels(host: HTMLElement, terrain: Terrain) {
     const [x, y] = project(lat, lon);
     return { d, min, max, major: cls === "major" || cls === "water", v: new THREE.Vector3(x, surfaceAt(terrain, x, y) * EXZ + (cls === "major" ? 70 : 30), -y) };
   });
+  for (const e of extra) {
+    const d = document.createElement("div");
+    d.className = `lbl ${e.cls}`;
+    d.textContent = e.text;
+    el.appendChild(d);
+    items.push({ d, min: e.min, max: e.max, major: false, v: e.pos.clone() });
+  }
   const PV = new THREE.Vector3();
   function update(camera: THREE.PerspectiveCamera, W: number, H: number, camDist: number) {
     for (const L of items) {
@@ -61,7 +70,10 @@ export function createLabels(host: HTMLElement, terrain: Terrain) {
       if (!inView || !zoomOk) { L.d.style.opacity = "0"; continue; }
       const d = camera.position.distanceTo(L.v);
       const fade = Math.min(1, (camDist - L.min * 0.8) / Math.max(1, L.min * 0.2 + 1)) * Math.min(1, (L.max - camDist) / (L.max * 0.2));
-      const op = Math.max(0, Math.min(1, 1.5 - d / 40000)) * Math.max(0, Math.min(1, fade)) * (camDist < 1800 && !L.major ? 0.45 : 1);
+      const lm = L.d.classList.contains("landmark");
+      const op = lm
+        ? Math.max(0, Math.min(1, 1.6 - d / 4500))
+        : Math.max(0, Math.min(1, 1.5 - d / 40000)) * Math.max(0, Math.min(1, fade)) * (camDist < 1800 && !L.major ? 0.45 : 1);
       L.d.style.opacity = op.toFixed(2);
       L.d.style.transform = `translate(${(((PV.x + 1) / 2) * W).toFixed(1)}px,${(((1 - PV.y) / 2) * H).toFixed(1)}px) translate(-50%,-50%)`;
     }

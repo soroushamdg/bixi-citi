@@ -14,7 +14,7 @@ export const TILE_MAGIC = 0x54435842;
 export const BLOCK_MAGIC = 0x4b425842;
 const pad4 = (n: number) => (n + 3) & ~3;
 
-export const KIND = { house: 0, mid: 1, tower: 2, civic: 3, industrial: 4, part: 5 } as const;
+export const KIND = { house: 0, mid: 1, tower: 2, civic: 3, industrial: 4, part: 5, plateau: 6 } as const;
 
 export interface TileBuilding {
   height: number; // m above base

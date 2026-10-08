@@ -4,6 +4,7 @@ import { useStore } from "zustand";
 import { ui, data, type Mode } from "./store";
 import { buildChapters, HOME, HOME_YEARS, MTLN, type Chapter } from "./chapters";
 import { loadYear, tickLiveClock } from "./load";
+import { LANDMARKS } from "./landmarks";
 import { yearCaption } from "./years-copy";
 import type { SceneHandle } from "@/scene";
 
@@ -155,6 +156,16 @@ export function scrubTo(minute: number) {
     ui.setState({ chapter: -1 });
     setCaption({ ...MODE_CAP[s.mode], compact: true, cta: false });
   }
+}
+
+/** Fly to a hand-modelled landmark and tell its story in the caption. */
+export function showLandmark(key: string) {
+  const l = LANDMARKS.find((x) => x.key === key);
+  if (!l) return;
+  setPlaying(false);
+  ui.setState({ chapter: -1 });
+  scene?.flyToLandmark(key);
+  setCaption({ tag: "Landmark", step: "Modelled by hand", title: l.name, body: l.blurb, compact: false, cta: false });
 }
 
 export function resetView() {

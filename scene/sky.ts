@@ -108,7 +108,7 @@ export function createSky(scene: THREE.Scene) {
     sunDir,
     apply,
     exposure: () => 0.8 + 0.14 * state.day,
-    bloom: () => ({ strength: 0.2 + 0.55 * state.night, threshold: lerp(0.96, 0.62, state.night) }),
+    bloom: () => ({ strength: 0.18 + 0.3 * state.night, threshold: lerp(0.96, 0.82, state.night) }),
     nightGlow: () => state.night * 0.95 + 0.25 * state.gold * (state.alt < 4 ? 1 : 0),
   };
 }

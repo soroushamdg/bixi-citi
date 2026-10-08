@@ -19,6 +19,8 @@ import { createStations } from "./stations";
 import { createCorridors, createTrips } from "./trips";
 import { createPulses } from "./pulses";
 import { createLabels } from "./labels";
+import { createLandmarks } from "./landmarks";
+import { LANDMARKS } from "@/lib/landmarks";
 
 /** [lat, lon, distance m, bearing the camera faces (° from true north), tilt from vertical °] */
 export type View = [number, number, number, number, number];
@@ -173,7 +175,12 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
   const yearTrips = createTrips(scene, { trail: 0.5, ring: 140, bucket: 1440 * 7 });
   const corridors = createCorridors(scene);
   const pulses = createPulses(scene, reduced);
-  const labels = createLabels(host, terrain);
+  const landmarks = createLandmarks(scene, terrain, shared);
+  const labels = createLabels(
+    host,
+    terrain,
+    landmarks.placed.map((p) => ({ text: p.l.name, pos: new THREE.Vector3(p.pos.x, p.top + 14, p.pos.z), min: 0, max: 5200, cls: "landmark" })),
+  );
 
   // wire data as it arrives (live and history load independently)
   const addedChunks = new Set<number>();
@@ -287,7 +294,7 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     const bl = sky.bloom();
     bloom.strength = bl.strength;
     bloom.threshold = bl.threshold;
-    bloom.radius = 0.5;
+    bloom.radius = 0.35;
     sky.sky.position.copy(camera.position);
 
     stations.update(s, d, camDist, dtMs / 1000);
@@ -296,6 +303,7 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
     if (s.mode === "rhythm" && d.flows) corridors.set(d.flows, s.day * 24 + Math.floor(s.minute / 60), stations);
     corridors.update(s.mode === "rhythm", now / 1000, camDist);
     pulses.update(now / 1000, stations, camDist);
+    landmarks.update(now / 1000, shared.uNight.value);
     city.update(camera, controls.target, now);
     labels.update(camera, W, H, camDist);
 
@@ -310,6 +318,18 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
 
   return {
     flyTo(v: View, ms = 1800) { flyState(viewToCam(v), ms); idle = false; },
+    /** fly to a landmark, looking at its front */
+    flyToLandmark(key: string, distance = 1, side = 25, tilt = 62) {
+      const l = LANDMARKS.find((x) => x.key === key);
+      if (!l) return;
+      const st = viewToCam([l.lat, l.lon, (l.view ?? Math.max(500, Math.max(l.L, l.H) * 6)) * distance, (l.axis + 180 + side) % 360, tilt]);
+      // aim a little above the base, and nudge the subject right of the caption card
+      const look = (l.axis + 180 + side) * RAD, right = new THREE.Vector3(Math.cos(look), 0, Math.sin(look));
+      st.target.y += l.H * 0.35;
+      st.target.addScaledVector(right, -st.r * 0.14);
+      flyState(st, 2000);
+      idle = false;
+    },
     zoom(f: number) { const st = camState(); st.r = clamp(st.r * f, controls.minDistance, controls.maxDistance); flyState(st, 600); },
     setBearing(b: number) { const st = camState(); st.theta = (b + 180) * RAD; flyState(st, 1200); },
     focus(sel: Sel) {

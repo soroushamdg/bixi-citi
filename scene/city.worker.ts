@@ -14,7 +14,10 @@ const PALETTE: Array<[number, number, number]> = [
   [0.75, 0.705, 0.625], // civic
   [0.65, 0.636, 0.607], // industrial
   [0.61, 0.645, 0.69], // building:part (mostly towers)
+  [0.62, 0.36, 0.29], // Le Plateau: red brick (mixed with greystone and ochre below)
 ];
+/** Plateau mix: brick reds, a darker brick, greystone, ochre */
+const PLATEAU: Array<[number, number, number]> = [[0.62, 0.36, 0.29], [0.5, 0.29, 0.24], [0.7, 0.68, 0.64], [0.72, 0.55, 0.36]];
 const ALT: [number, number, number] = [0.695, 0.655, 0.597];
 
 async function inflate(buf: ArrayBuffer): Promise<ArrayBuffer> {
@@ -68,8 +71,8 @@ async function build(url: string, key: string): Promise<TileGeometry> {
     const ox = rings[0][0], oy = rings[0][1];
     const r = Math.abs(Math.sin(ox * 12.9898 + oy * 78.233) * 43758.5453) % 1;
     const kind = t.kind[b];
-    const pc = PALETTE[Math.min(kind, PALETTE.length - 1)];
-    const mix = kind === 0 ? r : r * 0.5;
+    const pc = kind === 6 ? PLATEAU[Math.floor(r * 7.3) % PLATEAU.length] : PALETTE[Math.min(kind, PALETTE.length - 1)];
+    const mix = kind === 0 ? r : kind === 6 ? 0.1 * r : r * 0.5;
     const shade = 1 + (r - 0.5) * 0.08;
     const R = Math.round(Math.min(1, (pc[0] + (ALT[0] - pc[0]) * mix) * shade) * 255);
     const G = Math.round(Math.min(1, (pc[1] + (ALT[1] - pc[1]) * mix) * shade) * 255);

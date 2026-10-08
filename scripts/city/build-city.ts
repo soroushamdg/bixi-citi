@@ -24,6 +24,7 @@ import { loadDem, type Dem } from "../lib/dem";
 import type { OsmElement, OsmGeomPoint } from "../lib/overpass";
 import { assembleRings, centroid, cleanRing, pointInRing, ringArea, simplifyRing, type Ring } from "./geom";
 import { loadLayer, osmSource } from "./osm";
+import { LANDMARKS, PLATEAU } from "../../lib/landmarks";
 
 const OUT = "public/city";
 const WORK = ".cache/city";
@@ -349,8 +350,35 @@ async function buildBuildings(dem: Dem) {
           if (q.area < b.area * 1.05 && pointInRing(q.cx, q.cy, b.rings[0])) { drop[i] = 1; return; }
         }
   });
-  const kept = all.filter((_, i) => !drop[i]);
-  log(`${kept.length} after replacing outlines with their parts (${all.length - kept.length} outlines dropped)`);
+  const merged = all.filter((_, i) => !drop[i]);
+  log(`${merged.length} after replacing outlines with their parts (${all.length - merged.length} outlines dropped)`);
+
+  // hand-modelled landmarks replace the OSM buildings under them
+  const boxes = LANDMARKS.filter((l) => l.exclude).map((l) => {
+    const [cx, cy] = project(l.lat, l.lon), a = (l.axis * Math.PI) / 180;
+    return { cx, cy, ux: Math.sin(a), uy: Math.cos(a), hl: l.exclude!.L / 2, hw: l.exclude!.W / 2, key: l.key };
+  });
+  const replaced: Record<string, number> = {};
+  const kept = merged.filter((b) => {
+    for (const x of boxes) {
+      const dx = b.cx - x.cx, dy = b.cy - x.cy;
+      const u = dx * x.ux + dy * x.uy, v = -dx * x.uy + dy * x.ux;
+      if (Math.abs(u) <= x.hl && Math.abs(v) <= x.hw) { replaced[x.key] = (replaced[x.key] ?? 0) + 1; return false; }
+    }
+    return true;
+  });
+  log(`landmarks replaced ${merged.length - kept.length} OSM buildings: ${JSON.stringify(replaced)}`);
+
+  // Le Plateau's low buildings get the borough's brick palette
+  const [pcx, pcy] = project(PLATEAU.lat, PLATEAU.lon);
+  const [pu, pv] = toGrid(pcx, pcy);
+  let plateau = 0;
+  for (const b of kept) {
+    if (b.part || b.height > 18 || (b.kind !== KIND.house && b.kind !== KIND.mid)) continue;
+    const [u, v] = toGrid(b.cx, b.cy);
+    if (Math.abs(u - pu) <= PLATEAU.east / 2 && Math.abs(v - pv) <= PLATEAU.north / 2) { b.kind = KIND.plateau; plateau++; }
+  }
+  log(`${plateau} Plateau buildings`);
 
   // group by street-grid tile and block
   const byTile = new Map<string, B[]>();

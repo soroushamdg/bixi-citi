@@ -19,7 +19,7 @@ const WINDOWS = /* glsl */ `
     float w = step(.38, fy) * step(fy, .82) * step(.22, fx) * step(fx, .78);
     float r = h21(floor(vec2(fl, cc)) + floor(vWin * 97.));
     float lit = step(1. - vWin, r);
-    totalEmissiveRadiance += vec3(1., .66, .36) * w * lit * uNight * 2.2;
+    totalEmissiveRadiance += vec3(1., .66, .36) * w * lit * uNight * 1.25;
   }`;
 
 function detailMaterial(shared: Shared, grow: { value: number }) {
