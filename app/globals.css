@@ -426,3 +426,25 @@ body{transition:background-color .35s,color .35s}
 .tour-btns .next{color:var(--ink);box-shadow:var(--raise-sm),var(--edge)}
 .tour-btns .next:active{box-shadow:var(--press-sm)}
 @media (prefers-reduced-motion:reduce){.tour-ring,.tour-card{transition:none;animation:none}}
+
+/* phones: a desktop-only screen instead of the console (same query as lib/device.ts) */
+.phone-gate{display:none}
+@media (pointer:coarse) and (max-width:760px),(pointer:coarse) and (max-height:500px){
+  .app,.tip,.tour{display:none!important}
+  html,body{height:100%;overflow:hidden}
+  .phone-gate{display:grid;place-items:center;min-height:100svh;padding:24px 16px calc(24px + env(safe-area-inset-bottom));
+    background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--brand) 14%,transparent),transparent 60%),var(--console)}
+}
+.gate-card{max-width:420px;display:grid;justify-items:center;gap:14px;text-align:center;padding:30px 22px 22px;border-radius:var(--r-xl);background:var(--console);
+  box-shadow:var(--raise)}
+.gate-glass{margin-bottom:6px}
+.gate-glass .glass-logo{width:92px}
+.gate-kicker{color:var(--brand)}
+.gate-card h1{margin:0;font-family:var(--display);font-weight:600;font-size:clamp(22px,6.4vw,28px);line-height:1.15;letter-spacing:-.01em;color:var(--ink);text-wrap:balance}
+.gate-card p{margin:0;color:var(--ink-2);font-size:15px;line-height:1.55;text-wrap:pretty}
+.gate-btn{margin-top:6px;min-height:46px;padding:0 22px;border:0;border-radius:999px;font:600 15px/1 var(--body);color:#fff;background:var(--brand);
+  box-shadow:0 8px 22px -8px color-mix(in srgb,var(--brand) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer}
+.gate-btn:active{transform:translateY(1px)}
+.gate-btn:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.gate-card .gate-legal{font-size:12px;color:var(--ink-3)}
+.gate-legal a{color:inherit}

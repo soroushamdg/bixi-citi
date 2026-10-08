@@ -12,6 +12,8 @@ import { Deck } from "./Deck";
 import { Rail } from "./Rail";
 import { Footer } from "./Footer";
 import { Tour } from "./Tour";
+import { PhoneGate } from "./PhoneGate";
+import { isPhone } from "@/lib/device";
 
 export interface ConsoleProps {
   stationsHint: number;
@@ -23,6 +25,8 @@ export interface ConsoleProps {
 export function Console(props: ConsoleProps) {
   const tip = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    // phones only see the gate: load nothing
+    if (isPhone()) return;
     bindTip(tip.current);
     tickLiveClock();
     introCaption();
@@ -47,6 +51,7 @@ export function Console(props: ConsoleProps) {
       </div>
       <div className="tip" ref={tip} role="tooltip" />
       <Tour />
+      <PhoneGate />
     </>
   );
 }

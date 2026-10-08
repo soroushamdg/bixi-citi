@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useData } from "@/lib/store";
 import { startTour } from "./Tour";
+import { isPhone } from "@/lib/device";
 
 export const AUTHOR = { name: "Sora Bon", full: "Soroush Bonab", links: "https://linktr.ee/soroucsh" };
 export const REPO = "https://github.com/soroushamdg/bixi-citi";
@@ -34,6 +35,7 @@ export function Footer() {
   const years = useData((d) => d.years);
   const [city, setCity] = useState<{ generatedAt: string; buildings: number } | null>(null);
   useEffect(() => {
+    if (isPhone()) return;
     // the scene has already fetched this; the browser serves it from cache
     fetch("/city/index.json")
       .then((r) => (r.ok ? r.json() : null))

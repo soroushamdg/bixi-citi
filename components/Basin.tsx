@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { isPhone } from "@/lib/device";
 import { data, ui, useData, useUI, type Sel } from "@/lib/store";
 import { SAMPLE_PER_DAY } from "@/lib/formats/years";
 import { LANDMARKS } from "@/lib/landmarks";
@@ -104,6 +105,7 @@ export function Basin() {
     let handle: Awaited<ReturnType<typeof import("@/scene").createScene>> | null = null;
     (async () => {
       try {
+        if (isPhone()) return;
         const { createScene } = await import("@/scene");
         if (disposed || !host.current || !canvas.current) return;
         handle = await createScene(host.current, canvas.current, {

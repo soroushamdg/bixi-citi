@@ -3,6 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { ui } from "@/lib/store";
+import { isPhone } from "@/lib/device";
 
 /**
  * A short first-visit tour: one idea per step, with a spotlight on the part of
@@ -81,7 +82,7 @@ export function Tour() {
   useEffect(() => {
     let seen = false;
     try { seen = localStorage.getItem(KEY) === "done"; } catch { /* ignore */ }
-    if (seen) return;
+    if (seen || isPhone()) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const kick = () => { timer = setTimeout(() => { if (!tour.getState().open) tour.setState({ open: true, step: 0 }); }, 1200); };
     if (ui.getState().sceneStatus !== "loading") kick();
