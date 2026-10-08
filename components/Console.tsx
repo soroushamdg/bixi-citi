@@ -13,6 +13,7 @@ import { Rail } from "./Rail";
 import { Footer } from "./Footer";
 import { Tour } from "./Tour";
 import { PhoneGate } from "./PhoneGate";
+import { Visitors } from "./Visitors";
 import { isPhone } from "@/lib/device";
 
 export interface ConsoleProps {
@@ -51,6 +52,7 @@ export function Console(props: ConsoleProps) {
       </div>
       <div className="tip" ref={tip} role="tooltip" />
       <Tour />
+      <Visitors />
       <PhoneGate />
     </>
   );
