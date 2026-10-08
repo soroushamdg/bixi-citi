@@ -11,6 +11,7 @@ import { Basin } from "./Basin";
 import { Deck } from "./Deck";
 import { Rail } from "./Rail";
 import { Footer } from "./Footer";
+import { Tour } from "./Tour";
 
 export interface ConsoleProps {
   stationsHint: number;
@@ -45,6 +46,7 @@ export function Console(props: ConsoleProps) {
         <Footer />
       </div>
       <div className="tip" ref={tip} role="tooltip" />
+      <Tour />
     </>
   );
 }

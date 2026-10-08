@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useData } from "@/lib/store";
+import { startTour } from "./Tour";
 
 export const AUTHOR = { name: "Sora Bon", full: "Soroush Bonab", links: "https://linktr.ee/soroucsh" };
 export const REPO = "https://github.com/soroushamdg/bixi-citi";
@@ -61,6 +62,7 @@ export function Footer() {
         <div className="foot-links">
           <a href={AUTHOR.links} target="_blank" rel="noreferrer">linktr.ee/soroucsh</a>
           <a href={REPO} target="_blank" rel="noreferrer">Source on GitHub</a>
+          <button type="button" onClick={startTour}>Take the tour</button>
         </div>
         <p className="foot-legal">
           <b>Unofficial.</b> Not affiliated with, endorsed or sponsored by BIXI Montréal. BIXI and the BIXI logo are trademarks of BIXI Montréal. Trip data

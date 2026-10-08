@@ -5,6 +5,7 @@ import { getScene } from "@/lib/story-controller";
 import { MTLN } from "@/lib/chapters";
 import { BixiLogo } from "./BixiLogo";
 import { ThemeToggle } from "./ThemeToggle";
+import { TourButton } from "./Tour";
 
 const fmt = new Intl.NumberFormat("en-CA");
 
@@ -82,6 +83,7 @@ export function Header({ stationsHint, tripsHint, dateHint }: { stationsHint: nu
             <span className="knob" />
           </span>
         </button>
+        <TourButton />
         <ThemeToggle />
       </div>
     </header>
