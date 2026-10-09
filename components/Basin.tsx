@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { isPhone } from "@/lib/device";
 import { data, ui, useData, useUI, type Sel } from "@/lib/store";
 import { SAMPLE_PER_DAY } from "@/lib/formats/years";
-import { LANDMARKS } from "@/lib/landmarks";
-import { attachScene, getScene, play, resetView, selectYear, setMode, showBridge, showLandmark, useStory } from "@/lib/story-controller";
+import { LANDMARKS, VIEWPOINTS } from "@/lib/landmarks";
+import { attachScene, getScene, play, resetView, selectYear, setMode, showBridge, showLandmark, showView, useStory } from "@/lib/story-controller";
 import { BRIDGES } from "@/lib/bridges";
 import { HOME } from "@/lib/chapters";
 import { hideTip, row, showTip, title } from "@/lib/tip";
@@ -180,6 +180,17 @@ export function Basin() {
 
       {places && (
         <div className="float places" role="dialog" aria-label="Landmarks">
+          <span className="label">Views</span>
+          <ul>
+            {VIEWPOINTS.map((v) => (
+              <li key={v.key}>
+                <button onClick={() => { showView(v.key); setPlaces(false); }} title={v.blurb}>
+                  <b>{v.name}</b>
+                  <span>{v.blurb}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
           <span className="label">Landmarks · modelled by hand</span>
           <ul>
             {LANDMARKS.map((l) => (

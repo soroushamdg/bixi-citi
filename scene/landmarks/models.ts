@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { Landmark } from "@/lib/landmarks";
+import { project } from "@/lib/geo";
 import { Kit, signTexture, type LandmarkMaterials } from "./kit";
 
 /** Something that moves every frame (a wheel, a beacon, smoke). */
@@ -517,6 +518,128 @@ function swp(l: Landmark, M: LandmarkMaterials): Built {
   return { object: k.build() };
 }
 
+/** where a point (lat, lon) falls in a landmark's own frame: [x toward its front, z across] */
+function localOf(l: Landmark, lat: number, lon: number): [number, number] {
+  const [cx, cy] = project(l.lat, l.lon), [px, py] = project(lat, lon);
+  const a = (l.axis * Math.PI) / 180, dx = px - cx, dy = py - cy;
+  return [dx * Math.sin(a) + dy * Math.cos(a), dx * Math.cos(a) - dy * Math.sin(a)];
+}
+
+/* ---------------- Place des Arts: Théâtre Maisonneuve, and the esplanade fountain ---------------- */
+function theatre(l: Landmark, M: LandmarkMaterials): Built {
+  const k = new Kit();
+  const { L, W } = l;
+  const front = L / 2;
+  // the dark hall block, its fly tower, and the Cinquième Salle on the roof
+  k.box(M.swp, L - 10, 26, W, -5, 0, 0);
+  k.box(M.darkStone, L - 7, 2.4, W + 2, -5, 26, 0);
+  k.box(M.swp, 24, 8, 34, -10, 28.4, 0);
+  k.box(M.darkSteel, 25, 1.2, 35, -10, 36.4, 0);
+  // the glass lobby on the esplanade, lit from within at night
+  k.box(M.glass, 9, 19, W - 6, front - 4.5, 0, 0);
+  k.box(M.foyer, 0.4, 16, W - 10, front - 8.6, 1, 0);
+  for (let z = -W / 2 + 4; z <= W / 2 - 4; z += 4.8) k.box(M.darkSteel, 0.5, 19, 0.5, front, 0, z);
+  k.box(M.darkSteel, 10, 1.2, W - 4, front - 4.5, 19, 0);
+  // the esplanade and its fountain pool (OSM: 26 × 32 m, just west of the lobby)
+  const [px, pz] = localOf(l, 45.508213, -73.565961);
+  // (the model sits 1 m below the ground, so paving and pool are raised to show)
+  k.box(M.granite, 46, 0.6, W + 20, front + 22, 0.6, 0);
+  k.box(M.granite, 27.4, 1.1, 32.8, px, 0.6, pz);
+  k.box(M.water, 26, 1.0, 31.4, px, 0.62, pz);
+  const obj = k.build();
+
+  // jets in a 4 × 5 grid that rise and fall in a slow travelling wave
+  const cols = 5, rows = 4, n = cols * rows;
+  const jet = new THREE.CylinderGeometry(0.16, 0.32, 1, 8, 1, true).translate(0, 0.5, 0);
+  const jets = new THREE.InstancedMesh(jet, M.jets, n);
+  jets.castShadow = false;
+  jets.renderOrder = 6;
+  obj.add(jets);
+  const m = new THREE.Matrix4(), q = new THREE.Quaternion(), p = new THREE.Vector3(), sc = new THREE.Vector3();
+  const spots = Array.from({ length: n }, (_, i) => [px - 9 + (i % cols) * 4.5, pz - 9 + Math.floor(i / cols) * 6] as const);
+  return {
+    object: obj,
+    animate(t) {
+      spots.forEach(([x, z], i) => {
+        const h = 1.2 + 4.4 * (0.5 + 0.5 * Math.sin(t * 1.3 - x * 0.35 + z * 0.12));
+        jets.setMatrixAt(i, m.compose(p.set(x, 1.6, z), q, sc.set(1, h, 1)));
+      });
+      jets.instanceMatrix.needsUpdate = true;
+    },
+  };
+}
+
+/* ---------------- Place des Arts: Maison symphonique ---------------- */
+function symphony(l: Landmark, M: LandmarkMaterials): Built {
+  const k = new Kit();
+  const { L, W } = l;
+  const front = L / 2;
+  // the shoebox hall, a step up over the stage, and the roof plant
+  k.box(M.hall, L - 10, 28, W - 6, -5, 0, 0);
+  k.box(M.hall, L - 16, 6, W - 30, -6, 28, -6);
+  k.box(M.darkSteel, L - 9, 1, W - 5, -5, 28, 0);
+  // the long glass foyer on Saint-Urbain with its wooden fins; the beech glows through at night
+  k.box(M.glass, 9, 24, W - 2, front - 4.5, 0, 0);
+  k.box(M.foyer, 0.4, 21, W - 8, front - 8.4, 1, 0);
+  for (let z = -W / 2 + 2; z <= W / 2 - 2; z += 2.6) k.box(M.wood, 0.9, 24, 0.35, front - 0.3, 0, z);
+  k.box(M.darkSteel, 11, 1.4, W, front - 4.5, 24, 0);
+  return { object: k.build() };
+}
+
+/* ---------------- Complexe Desjardins: three towers, a hotel, an atrium ---------------- */
+/** the towers' square plan with cut-and-notched corners (OSM outline, 47.4 m) */
+function notchedSquare(): THREE.Shape {
+  const s = new THREE.Shape();
+  const q: Array<[number, number]> = [[23.7, 15.7], [21.1, 18.6], [19.4, 18.6], [18.5, 19.6], [18.5, 21.2], [15.7, 23.8]];
+  const pts: Array<[number, number]> = [];
+  for (const [sx, sy, flip] of [[1, 1, false], [-1, 1, true], [-1, -1, false], [1, -1, true]] as const) {
+    const corner = q.map(([a, b]) => [sx * a, sy * b] as [number, number]);
+    pts.push(...(flip ? corner.reverse() : corner));
+  }
+  pts.forEach(([x, y], i) => (i ? s.lineTo(x, y) : s.moveTo(x, y)));
+  s.closePath();
+  return s;
+}
+function desjardins(l: Landmark, M: LandmarkMaterials): Built {
+  const k = new Kit();
+  // the shopping podium, four tall storeys over the whole block, with its glass atrium roof
+  k.box(M.cdBase, 168, 22, 168);
+  k.box(M.darkConcrete, 170, 1.4, 170, 0, 22, 0);
+  k.pyramid(M.glass, 42, 10, 8, 23.4, -2);
+  k.box(M.windows, 38, 0.3, 38, 8, 22.2, -2);
+  // the hotel (DoubleTree, ex-Hyatt): an L in plan, 60 m
+  const [hx, hz] = localOf(l, 45.507249, -73.565025);
+  k.box(M.hotel, 19.4, 60, 58, hx + 37.5, 0, hz);
+  k.box(M.hotel, 75, 60, 19.4, hx - 9.6, 0, hz - 10.3);
+  k.box(M.darkConcrete, 12, 4, 12, hx + 37.5, 60, hz);
+  // the towers: notched squares; green LED fins on the crown, green lines up the corners
+  const plan = notchedSquare();
+  const towers: Array<[number, number, number]> = [[45.506863, -73.564075, 152], [45.507576, -73.563706, 130], [45.508107, -73.564470, 108]];
+  for (const [lat, lon, h] of towers) {
+    const [x, z] = localOf(l, lat, lon);
+    const top = h - 5, fin = 18;
+    const prism = (depth: number) => new THREE.ExtrudeGeometry(plan, { depth, bevelEnabled: false }).rotateX(-Math.PI / 2);
+    k.add(prism(top - fin), M.cdTower, x, 0, z);
+    // the crown: dark glass washed green inside, ribbed with bright fins, the roofline traced in light
+    k.add(prism(fin), M.desjardinsCrown, x, top - fin, z);
+    k.add(prism(5), M.darkConcrete, x, top, z, 0, 0, 0, 0.94, 1, 0.94);
+    k.box(M.darkSteel, 18, 6, 18, x, h, z);
+    for (let t = -14.4; t <= 14.4; t += 2.4) {
+      k.box(M.desjardinsGreen, 0.45, fin, 0.45, x + 23.95, top - fin, z + t);
+      k.box(M.desjardinsGreen, 0.45, fin, 0.45, x - 23.95, top - fin, z + t);
+      k.box(M.desjardinsGreen, 0.45, fin, 0.45, x + t, top - fin, z + 24.05);
+      k.box(M.desjardinsGreen, 0.45, fin, 0.45, x + t, top - fin, z - 24.05);
+    }
+    for (const s of [-1, 1]) for (const y of [top - fin, top - 0.6]) {
+      k.box(M.desjardinsGreen, 0.5, 0.6, 32, x + s * 24, y, z);
+      k.box(M.desjardinsGreen, 32, 0.6, 0.5, x, y, z + s * 24.1);
+    }
+    // the notched corners carry a softer line all the way up
+    for (const [sx, sz] of [[1, 1], [-1, 1], [-1, -1], [1, -1]]) k.box(M.desjardinsSoft, 0.45, top - fin - 22, 0.45, x + sx * 19.2, 22, z + sz * 19.2);
+  }
+  return { object: k.build() };
+}
+
 /* ---------------- Schwartz's ---------------- */
 function deli(l: Landmark, M: LandmarkMaterials): Built {
   const k = new Kit();
@@ -574,4 +697,5 @@ function bagel(l: Landmark, M: LandmarkMaterials): Built {
 
 export const BUILDERS: Record<Landmark["kind"], (l: Landmark, M: LandmarkMaterials) => Built> = {
   basilica, oratory, habitat, stadium, biosphere, clocktower, sunlife, pvm, cross, chalet, wheel, greenhouses, atwater, calder, fiveroses, arena, market, swp, deli, bagel,
+  desjardins, theatre, symphony,
 };

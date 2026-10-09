@@ -337,7 +337,12 @@ export async function createScene(host: HTMLElement, canvas: HTMLCanvasElement, 
   raf = requestAnimationFrame(frame);
 
   return {
-    flyTo(v: View, ms = 1800) { flyState(viewToCam(v), ms); idle = false; },
+    flyTo(v: View, ms = 1800, lift = 0) {
+      const st = viewToCam(v);
+      st.target.y += lift;
+      flyState(st, ms);
+      idle = false;
+    },
     /** fly to a landmark, looking at its front */
     flyToLandmark(key: string, distance = 1, side = 25, tilt = 62) {
       const l = LANDMARKS.find((x) => x.key === key);

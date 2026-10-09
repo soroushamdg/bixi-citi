@@ -104,9 +104,15 @@ export function landmarkMaterials(night: { value: number }) {
     m.customProgramCacheKey = () => `facade-${color}-${floor}-${bay}-${glass}-${lit}`;
     return m;
   };
-  const glow = (color: string, day: number, nightI: number) => {
-    const m = std(color, 0.5, 0, { emissive: new THREE.Color(color), emissiveIntensity: day });
+  const glow = (color: string, day: number, nightI: number, extra: THREE.MeshStandardMaterialParameters = {}) => {
+    const m = std(color, 0.5, 0, { emissive: new THREE.Color(color), emissiveIntensity: day, ...extra });
     (m.userData as { glow: [number, number] }).glow = [day, nightI];
+    return m;
+  };
+  /** a light fitting: its own colour by day, `light` at `nightI` after dusk */
+  const lamp = (color: string, light: string, nightI: number, roughness = 0.5, metalness = 0.3) => {
+    const m = std(color, roughness, metalness, { emissive: new THREE.Color(light), emissiveIntensity: 0 });
+    (m.userData as { glow: [number, number] }).glow = [0, nightI];
     return m;
   };
   return {
@@ -133,12 +139,24 @@ export function landmarkMaterials(night: { value: number }) {
     bell: facade("#b3bcc6", 4.5, 2.4, "#4b5968", 0.45, 0.3),
     swp: facade("#5d5a56", 4.2, 3.6, "#2c2a28", 0.6),
     brickFacade: facade("#8f4a39", 3.2, 2.6, "#26221f", 0.7),
+    cdTower: facade("#bdb5a6", 3.8, 1.7, "#2a2f35", 0.45),
+    cdBase: facade("#aaa296", 5.4, 4.2, "#2b2e33", 0.55),
+    hotel: facade("#c9c1b2", 3.0, 3.6, "#363a40", 0.6),
+    hall: facade("#8e8b85", 6.0, 5.0, "#2f2d2b", 0.4),
     windows: glow("#ffcf8a", 0.05, 2.2),
     clockFace: glow("#f4f0e2", 0.25, 2.6),
     crossLights: glow("#f6f4ff", 0.15, 4.5),
     neonRed: glow("#ff2a1f", 0.7, 5),
     rimLights: glow("#fff3d6", 0.1, 3),
     bioGlow: glow("#9fe6ff", 0.02, 1.4),
+    // Complexe Desjardins: LED lines that turn the tower crowns green after dusk
+    // Complexe Desjardins after dusk: LED fins (dark metal by day), and the crown's glass washed green from inside
+    desjardinsGreen: lamp("#3d4642", "#2ee27a", 3.4),
+    desjardinsSoft: lamp("#3d4642", "#22c06a", 1.6),
+    desjardinsCrown: lamp("#2c3431", "#1c9a55", 0.22, 0.35, 0.4),
+    foyer: glow("#f0b878", 0.06, 2.1),
+    water: std("#1d3a4e", 0.08, 0.35),
+    jets: glow("#e4f6ff", 0.25, 2.2, { transparent: true, opacity: 0.62, depthWrite: false }),
   };
 }
 export type LandmarkMaterials = ReturnType<typeof landmarkMaterials>;

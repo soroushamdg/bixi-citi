@@ -27,7 +27,7 @@ export interface Landmark {
 export type LandmarkKind =
   | "basilica" | "oratory" | "habitat" | "stadium" | "biosphere" | "clocktower" | "sunlife" | "pvm"
   | "cross" | "chalet" | "wheel" | "greenhouses" | "atwater" | "calder" | "fiveroses" | "arena"
-  | "market" | "swp" | "deli" | "bagel";
+  | "market" | "swp" | "deli" | "bagel" | "desjardins" | "theatre" | "symphony";
 
 export const LANDMARKS: Landmark[] = [
   { key: "notredame", name: "Notre-Dame Basilica", blurb: "Gothic Revival, 1829; twin towers 69 m over Place d'Armes.", lat: 45.50441, lon: -73.55599, axis: 296.5, L: 110, W: 46, H: 69, kind: "basilica", exclude: { L: 118, W: 54 }, view: 900 },
@@ -48,6 +48,9 @@ export const LANDMARKS: Landmark[] = [
   { key: "bell", name: "Centre Bell", blurb: "Home of the Canadiens since 1996; 21,000 seats.", lat: 45.496062, lon: -73.569294, axis: 131.2, L: 146, W: 107, H: 40, kind: "arena", exclude: { L: 150, W: 111 }, view: 1100 },
   { key: "jeantalon", name: "Jean-Talon Market", blurb: "Open-air market in Little Italy since 1933.", lat: 45.535914, lon: -73.615063, axis: 122.7, L: 120, W: 100, H: 9, kind: "market", exclude: { L: 125, W: 105 }, view: 700 },
   { key: "pda", name: "Place des Arts", blurb: "Salle Wilfrid-Pelletier, the colonnaded heart of the Quartier des spectacles.", lat: 45.508726, lon: -73.567212, axis: 125, L: 100, W: 72, H: 32, kind: "swp", exclude: { L: 104, W: 76 }, view: 900 },
+  { key: "maisonneuve", name: "Théâtre Maisonneuve", blurb: "Place des Arts' second hall, with Théâtre Jean-Duceppe and the Cinquième Salle; its glass lobby opens on the esplanade fountain.", lat: 45.508578, lon: -73.565607, axis: 213.5, L: 71, W: 66, H: 30, kind: "theatre", exclude: { L: 75, W: 70 }, view: 650 },
+  { key: "symphonique", name: "Maison symphonique", blurb: "The Orchestre symphonique de Montréal's hall since 2011, lined with Quebec beech behind a glass foyer.", lat: 45.509277, lon: -73.566729, axis: 33.25, L: 38, W: 105, H: 30, kind: "symphony", exclude: { L: 42, W: 109 }, view: 700 },
+  { key: "desjardins", name: "Complexe Desjardins", blurb: "Three towers and a hotel over a shopping atrium, facing Place des Arts since 1976. After dark the crowns glow Desjardins green.", lat: 45.507454, lon: -73.564443, axis: 302, L: 173, W: 174, H: 152, kind: "desjardins", exclude: { L: 180, W: 181 }, view: 1500 },
   { key: "schwartz", name: "Schwartz's Deli", blurb: "Smoked meat on boulevard Saint-Laurent since 1928.", lat: 45.516387, lon: -73.577597, axis: 32.7, L: 23.6, W: 6.4, H: 9, kind: "deli", exclude: { L: 24, W: 7 }, view: 380 },
   { key: "fairmount", name: "Fairmount Bagel", blurb: "Wood-fired bagels, open around the clock since 1919.", lat: 45.522862, lon: -73.595166, axis: 122, L: 15.8, W: 9.2, H: 7, kind: "bagel", exclude: { L: 16, W: 10 }, view: 380 },
   { key: "stviateur", name: "St-Viateur Bagel", blurb: "The other side of Montréal's great bagel rivalry, since 1957.", lat: 45.52268, lon: -73.60195, axis: 122, L: 14, W: 8, H: 7, kind: "bagel", exclude: { L: 15, W: 9 }, view: 380 },
@@ -59,3 +62,15 @@ export const LANDMARKS: Landmark[] = [
  * metres around the box centre).
  */
 export const PLATEAU = { lat: 45.5235, lon: -73.5795, east: 2900, north: 2700 };
+
+/** Viewpoints worth flying to, framed like a postcard: [lat, lon, distance m, bearing faced, tilt] */
+export interface Viewpoint { key: string; name: string; blurb: string; view: [number, number, number, number, number]; lift: number }
+export const VIEWPOINTS: Viewpoint[] = [
+  {
+    key: "qds",
+    name: "Quartier des spectacles",
+    blurb: "Place des Arts, its esplanade fountain and the Complexe Desjardins towers across Sainte-Catherine. Best after dark, when the towers glow green.",
+    view: [45.5076, -73.5650, 760, 150, 70],
+    lift: 55,
+  },
+];
