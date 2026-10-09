@@ -35,22 +35,13 @@ function Kpi({ label, chip, value, small, sub }: { label: string; chip: ChipKind
   );
 }
 
-export function Kpis() {
+/** Network totals from the live snapshot. */
+export function useNet() {
   const info = useData((d) => d.info);
   const bikes = useData((d) => d.bikes);
   const ebikes = useData((d) => d.ebikes);
   const docks = useData((d) => d.docks);
-  const activity = useData((d) => d.activity);
-  const meta = useData((d) => d.meta);
-  const rhythm = useData((d) => d.rhythm);
-  const day = useData((d) => d.day);
-  const mode = useUI((s) => s.mode);
-  const minute = useUI((s) => Math.floor(s.minute));
-  const wd = useUI((s) => s.day);
-  const yday = useUI((s) => s.yday);
-  const yearSummary = useData((d) => d.yearSummary);
-
-  const net = useMemo(() => {
+  return useMemo(() => {
     if (!info || !bikes.length) return null;
     let cap = 0, bk = 0, eb = 0, empty = 0, full = 0;
     for (let i = 0; i < info.ids.length; i++) {
@@ -61,6 +52,19 @@ export function Kpis() {
     }
     return { cap, bk, eb, empty, full };
   }, [info, bikes, ebikes, docks]);
+}
+
+/** The figure that changes with the mode (the fourth KPI, and the full-screen readout). */
+export function useModeKpi(): Parameters<typeof Kpi>[0] {
+  const activity = useData((d) => d.activity);
+  const meta = useData((d) => d.meta);
+  const rhythm = useData((d) => d.rhythm);
+  const day = useData((d) => d.day);
+  const mode = useUI((s) => s.mode);
+  const minute = useUI((s) => Math.floor(s.minute));
+  const wd = useUI((s) => s.day);
+  const yday = useUI((s) => s.yday);
+  const yearSummary = useData((d) => d.yearSummary);
 
   let dyn: Parameters<typeof Kpi>[0];
   if (mode === "live") {
@@ -92,6 +96,12 @@ export function Kpis() {
     dyn = { label: "To rebalance", chip: "avg", value: meta ? fmt.format(Math.round(meta.pile.haulPerDay / 10) * 10) : "…", sub: "per day, net drift between stations" };
   }
 
+  return dyn;
+}
+
+export function Kpis() {
+  const net = useNet();
+  const dyn = useModeKpi();
   return (
     <section className="kpis" aria-label="Network at a glance">
       <Kpi label="Bikes docked" chip="live" value={net ? fmt.format(net.bk) : "…"} small={net ? `/ ${fmt.format(net.cap)}` : undefined} sub={net ? `${Math.round((net.bk / Math.max(1, net.cap)) * 100)}% of all docks hold a bike` : "waiting for the live feed"} />

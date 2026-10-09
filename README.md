@@ -8,6 +8,8 @@ Storytelling with BIXI data: an unofficial, interactive 3D portrait of [BIXI Mon
 - **Stations**: which stations gain or lose bikes on an average day. Bikes roll downhill toward the river, and trucks carry them back up.
 - **Years**: every season of open data since 2014 (13 yearly files, 91 M rides). Each year has its rides-per-day calendar, peak and quietest days, busiest hour and routes, and growth on the previous year over the same months. Play fast-forwards through the season: stations rise with that day's departures, a sample of its rides flashes across the city, the 17:30 sun follows the calendar, and playback rolls on into the next year.
 
+**Full screen** (the ⤢ button on the map, or F): the city takes the whole screen. The dashboard floats over it while the mouse moves and steps aside after a few still seconds, leaving a slim readout with the mode, the clock and the key numbers. Esc or F leaves. The ⟳ button above it flies back to the overview.
+
 Every number on the page carries a chip: **LIVE** (GBFS), **REAL** (counted from individual trips), or **DERIVED** (averages, or slopes computed from terrain).
 
 Design & build: **Sora Bon (Soroush Bonab)** · [linktr.ee/soroucsh](https://linktr.ee/soroucsh)

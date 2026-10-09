@@ -14,6 +14,7 @@ import { Footer } from "./Footer";
 import { Tour } from "./Tour";
 import { PhoneGate } from "./PhoneGate";
 import { Visitors } from "./Visitors";
+import { ImmersiveLayer } from "./Immersive";
 import { isPhone } from "@/lib/device";
 
 export interface ConsoleProps {
@@ -51,6 +52,7 @@ export function Console(props: ConsoleProps) {
         <Footer />
       </div>
       <div className="tip" ref={tip} role="tooltip" />
+      <ImmersiveLayer />
       <Tour />
       <Visitors />
       <PhoneGate />

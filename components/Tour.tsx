@@ -4,6 +4,7 @@ import { createStore } from "zustand/vanilla";
 import { useStore } from "zustand";
 import { ui } from "@/lib/store";
 import { isPhone } from "@/lib/device";
+import { exitImmersive } from "./Immersive";
 
 /**
  * A short first-visit tour: one idea per step, with a spotlight on the part of
@@ -25,14 +26,18 @@ const STEPS: Step[] = [
   { target: ".deck .scrub", title: "Move through time", body: "Drag the timeline. The sun, the light and the rides follow it." },
   { target: ".kpis", title: "The numbers", body: "Key figures for what you are looking at. The chips say where each comes from: LIVE, REAL or DERIVED." },
   { target: ".rail", title: "Details", body: "Charts for the current mode. Hover for exact values; click a day, hour or station to jump to it." },
-  { target: '.mapctl [aria-label="Landmarks"]', title: "Landmarks and bridges", body: "Fly to hand-modelled places, from Notre-Dame to the Jacques Cartier Bridge." },
+  { target: '.mapctl [aria-label="Landmarks"]', title: "Landmarks and views", body: "Fly to hand-modelled places, from Notre-Dame to the Jacques Cartier Bridge, or to a postcard view like the Quartier des spectacles at night." },
+  { target: '.mapctl [aria-label="Full screen"]', title: "Full screen", body: "Give the city the whole screen (or press F). The dashboard steps aside while you watch and comes back when you move the mouse. The button above it flies back to the overview." },
   { target: ".head-right", title: "Make it yours", body: "Turn the map to Montréal north, switch between light and dark, replay this tour with ?, or share it." },
   { title: "You're set", body: "Start with Live to see the network breathing, or press play for a day of real rides." },
 ];
 
 const KEY = "bixi-tour";
 const tour = createStore<{ open: boolean; step: number }>(() => ({ open: false, step: 0 }));
-export const startTour = () => tour.setState({ open: true, step: 0 });
+export const startTour = () => {
+  exitImmersive(); // the tour points at the console in its normal layout
+  tour.setState({ open: true, step: 0 });
+};
 
 type Box = { x: number; y: number; w: number; h: number } | null;
 const PAD = 10;

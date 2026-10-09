@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { isPhone } from "@/lib/device";
+import { FullscreenButton } from "./Immersive";
 import { data, ui, useData, useUI, type Sel } from "@/lib/store";
 import { SAMPLE_PER_DAY } from "@/lib/formats/years";
 import { LANDMARKS, VIEWPOINTS } from "@/lib/landmarks";
@@ -173,9 +174,14 @@ export function Basin() {
         <button className="mapbtn" aria-label="Landmarks" aria-expanded={places} onClick={() => setPlaces((v) => !v)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z" /></svg>
         </button>
-        <button className="mapbtn" aria-label="Reset view" onClick={resetView}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6" /></svg>
+        <button className="mapbtn" aria-label="Reset view" title="Back to the overview" onClick={resetView}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3" />
+            <path d="M19.8 3.6v3.6h-3.6" />
+            <circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none" />
+          </svg>
         </button>
+        <FullscreenButton />
       </div>
 
       {places && (
