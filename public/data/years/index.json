@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-08T19:07:00.294Z",
+ "generatedAt": "2026-10-09T16:21:59.543Z",
  "years": [
   {
    "year": 2014,
@@ -374,10 +374,10 @@
    "medianMin": 10.7,
    "memberShare": null,
    "growth": 0.078,
-   "url": "",
-   "etag": null,
+   "url": "https://cdn.bixi.com/wp-content/uploads/2026/02/DonneesOuvertes2025_010203040506070809101112.zip",
+   "etag": "\"1bceb36fcad3060675471794d2a1326b\"",
    "pack": {
-    "file": "2025.47efbc6e4f.pack.gz",
+    "file": "2025.f81bc2401f.pack.gz",
     "bytes": 594224
    }
   },
@@ -420,7 +420,7 @@
   "year": 2025
  },
  "summaries": {
-  "file": "summaries.ca665a1ea7.json",
-  "bytes": 64252
+  "file": "summaries.99c2514f51.json",
+  "bytes": 64409
  }
 }
