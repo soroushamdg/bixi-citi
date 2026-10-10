@@ -1,0 +1,147 @@
+<!doctype html>
+<!-- YouTube thumbnails for the showreel, 1280×720 each. render.mjs saves them at 1920×1080.
+     The backgrounds are frames of the real app from video/build/footage (run video/capture.mjs first). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BIXI Citi thumbnails</title>
+<style>
+@font-face{font-family:'Unbounded';src:url(../comp/fonts/Unbounded.woff2) format('woff2');font-weight:300 800;font-display:block}
+@font-face{font-family:'Geist';src:url(../comp/fonts/Geist.woff2) format('woff2');font-weight:300 700;font-display:block}
+@font-face{font-family:'Geist Mono';src:url(../comp/fonts/GeistMono.woff2) format('woff2');font-weight:400 600;font-display:block}
+
+:root{
+  --bg:#07090d;--ink:#fff;--ink-2:#a6aebd;--ink-3:#59627a;
+  --red:#EE3124;--red-deep:#8d1209;--red-glow:rgba(238,49,36,.65);
+  --cyan:#6fd8ef;--led:#f3dcb0;
+  --display:'Unbounded',sans-serif;--mono:'Geist Mono',monospace;
+}
+html,body{margin:0;background:#111}
+body{display:flex;flex-direction:column;gap:40px;padding:40px;width:max-content}
+.thumb{position:relative;width:1280px;height:720px;overflow:hidden;background:var(--bg);font-family:'Geist',sans-serif;color:var(--ink)}
+.thumb > *{position:absolute}
+.bg{inset:0;width:100%;height:100%;object-fit:cover;filter:contrast(1.14) saturate(1.3) brightness(1.06)}
+.shade{inset:0}
+
+/* creator-style type: heavy, tight, with a dark outline drawn behind the fill */
+.big{font:800 100px/0.9 var(--display);text-transform:uppercase;letter-spacing:-.035em;white-space:nowrap;
+  -webkit-text-stroke:16px rgba(7,9,13,.92);paint-order:stroke fill;
+  text-shadow:0 14px 34px rgba(0,0,0,.7)}
+.tag{display:inline-block;background:var(--red);color:#fff;font:800 76px/1 var(--display);text-transform:uppercase;
+  letter-spacing:-.03em;padding:16px 26px 18px;border-radius:12px;white-space:nowrap;transform:rotate(-2.5deg);
+  box-shadow:0 9px 0 var(--red-deep),0 0 60px var(--red-glow),0 24px 50px rgba(0,0,0,.6)}
+.mark{left:44px;bottom:34px;font:600 19px/1 var(--mono);letter-spacing:.32em;color:rgba(255,255,255,.82);
+  text-shadow:0 2px 10px rgba(0,0,0,.9)}
+.mark i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-right:12px;
+  box-shadow:0 0 12px var(--red);vertical-align:1px}
+
+/* A · the number */
+#a .bg{object-position:72% 62%;transform:scale(1.16);transform-origin:78% 66%}
+#a .shade{background:
+  linear-gradient(90deg,rgba(7,9,13,.86) 0%,rgba(7,9,13,.6) 34%,rgba(7,9,13,0) 62%),
+  radial-gradient(120% 90% at 85% 75%,transparent 40%,rgba(7,9,13,.55) 100%)}
+#a .kick{left:66px;top:62px;font:600 25px/1 var(--mono);letter-spacing:.24em;color:var(--led);text-shadow:0 2px 12px #000}
+#a .kick b{color:#fff;font-weight:600}
+#a .num{left:50px;top:104px;font-size:318px;
+  text-shadow:0 0 70px rgba(255,255,255,.28),0 16px 40px rgba(0,0,0,.75)}
+#a .t1{left:62px;top:440px}
+
+/* B · CSV in, city out */
+#b .bg{object-position:100% 40%;transform:scale(1.08);transform-origin:100% 30%}
+#b .shade{background:linear-gradient(0deg,rgba(7,9,13,.5),transparent 30%),linear-gradient(180deg,rgba(7,9,13,.35),transparent 30%)}
+#b .panel{left:0;top:0;width:600px;height:720px;background:#0a0d13;clip-path:polygon(0 0,100% 0,84% 100%,0 100%);overflow:hidden}
+#b .csv{left:26px;top:22px;margin:0;font:400 15px/1.62 var(--mono);color:var(--ink-3);white-space:pre;
+  transform:rotate(-4deg);transform-origin:0 0}
+#b .csv b{font-weight:600;color:var(--ink-2)}
+#b .panel::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(62% 34% at 36% 52%,rgba(10,13,19,.97) 45%,rgba(10,13,19,.3) 100%),
+             repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 4px)}
+#b .edge{left:0;top:0;width:1280px;height:720px;pointer-events:none}
+#b .before{left:44px;top:206px;color:#d9dde5;font-size:150px}
+#b .before small{display:block;font-size:150px}
+#b .after{right:56px;top:58px;text-align:right}
+#b .after .big{position:static;display:block;font-size:236px;
+  text-shadow:0 0 60px rgba(111,216,239,.45),0 16px 40px rgba(0,0,0,.75)}
+#b .after .tag{margin-top:18px;margin-right:6px;font-size:88px}
+#b .arrow{left:484px;top:290px;width:140px;height:140px;border-radius:50%;background:var(--red);
+  display:grid;place-items:center;box-shadow:0 8px 0 var(--red-deep),0 0 70px var(--red-glow),0 20px 50px rgba(0,0,0,.6)}
+
+/* C · live */
+#c .bg{object-position:60% 50%;transform:scale(1.12);transform-origin:64% 58%}
+#c .shade{background:
+  radial-gradient(80% 75% at 18% 22%,rgba(7,9,13,.88) 0%,rgba(7,9,13,.55) 45%,transparent 75%),
+  linear-gradient(0deg,rgba(7,9,13,.45),transparent 35%)}
+#c .live{left:62px;top:58px;display:flex;align-items:center;gap:16px;background:var(--red);border-radius:10px;
+  padding:12px 22px 13px 20px;font:800 38px/1 var(--display);letter-spacing:.02em;
+  box-shadow:0 7px 0 var(--red-deep),0 0 50px var(--red-glow)}
+#c .live i{width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 0 0 7px rgba(255,255,255,.3),0 0 18px #fff}
+#c .t0{left:48px;top:156px;font-size:154px}
+#c .t1{left:62px;top:318px;font-size:88px}
+</style>
+</head>
+<body>
+
+<!-- A · the number: one real day's rides bursting out of downtown at night -->
+<section class="thumb" id="a">
+  <img class="bg" src="../build/footage/day/0290.jpg" alt="">
+  <div class="shade"></div>
+  <div class="kick"><b>MONTRÉAL</b> · 2014 → 2026</div>
+  <div class="big num">91M</div>
+  <div class="tag t1">bike rides</div>
+  <div class="mark"><i></i>BIXI CITI</div>
+</section>
+
+<!-- B · before/after: BIXI's raw trip CSV becomes the 3D city with its rides -->
+<section class="thumb" id="b">
+  <img class="bg" src="../build/footage/city/0150.jpg" alt="">
+  <div class="shade"></div>
+  <div class="panel">
+    <pre class="csv"><b>STARTSTATIONNAME,STARTSTATIONARRONDISSEMENT,STARTSTATIONLATITUDE,STARTSTATIONLONGITUDE,ENDSTATIONNAME,ENDSTATIONARRONDISSEMENT</b>
+Roy / Saint-Laurent,Le Plateau-Mont-Royal,45.51565182195085,-73.57577390039296,Roy / Saint-Laurent,Le Plateau-Mont-Royal,
+Parc Molson (d'Iberville / Beaubien),Rosemont - La Petite-Patrie,45.54902230455398,-73.59198164194822,Jeanne-Mance / Sherbrooke,
+St-Urbain / Laurier,Le Plateau-Mont-Royal,45.521710833771046,-73.59374284744263,de Maisonneuve / de Bleury,Ville-Marie,
+St-Urbain / Laurier,Le Plateau-Mont-Royal,45.521710833771046,-73.59374284744263,de Maisonneuve / de Bleury,Ville-Marie,
+Berri / Rachel,Le Plateau-Mont-Royal,45.52275023118295,-73.57724860310555,Jeanne-Mance / Sherbrooke,Le Plateau-Mont-Royal,
+Fortune / Wellington,Le Sud-Ouest,45.477817318048714,-73.55884194374084,Gordon / Wellington,Verdun,45.46103554361523,
+Roy / Saint-Laurent,Le Plateau-Mont-Royal,45.51565182195085,-73.57577390039296,du Parc-La Fontaine / Rachel,
+Stanley / René-Lévesque,Ville-Marie,45.49793428742311,-73.5708126425743,de Maisonneuve / de Bleury,Ville-Marie,
+Collège de Rosemont (Beaubien / 15e avenue),Rosemont - La Petite-Patrie,45.55774990838239,-73.58380123972893,
+Square Viger (Berri),Ville-Marie,45.512204335151516,-73.55460837492501,Métro Sauvé (Berri / Sauvé),Ahuntsic-Cartierville,
+Métro Rosemont (de St-Vallier / Rosemont),Rosemont - La Petite-Patrie,45.53180536220488,-73.5975547786984,9e avenue / Masson,
+Garnier / du Mont-Royal,Le Plateau-Mont-Royal,45.53075597398246,-73.5761762317452,de la Porte de Québec / St-André,
+CHU Ste-Justine (de la Côte Ste-Catherine / Hudson),Côte-des-Neiges - Notre-Dame-de-Grâce,45.50398168549117,
+Métro Papineau (Dorion / De Maisonneuve),Ville-Marie,45.5238445756922,-73.55236601831166,Atwater / Sherbrooke,Ville-Marie,
+Roy / Saint-Laurent,Le Plateau-Mont-Royal,45.51565182195085,-73.57577390039296,Roy / Saint-Laurent,Le Plateau-Mont-Royal,
+Parc Molson (d'Iberville / Beaubien),Rosemont - La Petite-Patrie,45.54902230455398,-73.59198164194822,Jeanne-Mance / Sherbrooke,
+St-Urbain / Laurier,Le Plateau-Mont-Royal,45.521710833771046,-73.59374284744263,de Maisonneuve / de Bleury,Ville-Marie,
+Berri / Rachel,Le Plateau-Mont-Royal,45.52275023118295,-73.57724860310555,Jeanne-Mance / Sherbrooke,Le Plateau-Mont-Royal,
+Fortune / Wellington,Le Sud-Ouest,45.477817318048714,-73.55884194374084,Gordon / Wellington,Verdun,45.46103554361523,
+Stanley / René-Lévesque,Ville-Marie,45.49793428742311,-73.5708126425743,de Maisonneuve / de Bleury,Ville-Marie,
+Square Viger (Berri),Ville-Marie,45.512204335151516,-73.55460837492501,Métro Sauvé (Berri / Sauvé),Ahuntsic-Cartierville,
+Garnier / du Mont-Royal,Le Plateau-Mont-Royal,45.53075597398246,-73.5761762317452,de la Porte de Québec / St-André,</pre>
+  </div>
+  <svg class="edge" viewBox="0 0 1280 720">
+    <defs><filter id="glow" x="-50%" y="-10%" width="200%" height="120%"><feGaussianBlur stdDeviation="7"/></filter></defs>
+    <line x1="600" y1="0" x2="504" y2="720" stroke="#EE3124" stroke-width="14" filter="url(#glow)" opacity=".9"/>
+    <line x1="600" y1="0" x2="504" y2="720" stroke="#ff6a5a" stroke-width="5"/>
+  </svg>
+  <div class="big before">2 GB<small>CSV</small></div>
+  <div class="arrow">
+    <svg width="74" height="74" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 5.5 19.5 12 13 18.5"/></svg>
+  </div>
+  <div class="after"><span class="big">3D</span><span class="tag">city</span></div>
+  <div class="mark"><i></i>BIXI CITI</div>
+</section>
+
+<!-- C · live: every station rising out of the city at night -->
+<section class="thumb" id="c">
+  <img class="bg" src="../build/footage/live/0239.jpg" alt="">
+  <div class="shade"></div>
+  <div class="live"><i></i>LIVE DATA</div>
+  <div class="big t0">Montréal</div>
+  <div class="tag t1">in real 3D</div>
+  <div class="mark"><i></i>BIXI CITI</div>
+</section>
+
+</body>
+</html>

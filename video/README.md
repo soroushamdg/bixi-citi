@@ -31,3 +31,17 @@ node video/render.mjs      # composition → video/bixi-citi-showreel.mp4 (≈ 1
 | `render.mjs` | renders the composition in parallel and encodes it with ffmpeg |
 
 `video/build/` holds the intermediates and is not committed.
+
+## YouTube thumbnails
+
+`thumbnail/thumbnail-{a,b,c}.jpg` are three 1920×1080 thumbnails for the upload, made for YouTube's Test & compare. Each background is a raw frame of the 3D footage above, with no retouching.
+
+- **a**: "91M bike rides" over one real day's rides bursting out of downtown.
+- **b**: "2 GB CSV → 3D city", BIXI's raw trip file beside the city it becomes.
+- **c**: "Montréal in real 3D" over the live stations at night.
+
+`thumbnail/index.html` lays them out at 1280×720 with the showreel's fonts. `thumbnail/render.mjs` saves them at 1.5× as baseline JPEGs under YouTube's 2 MB limit. It also writes `.cache/thumb/preview.png`, which shows each thumbnail at the sizes YouTube displays it, so you can check the text still reads.
+
+```sh
+PLAYWRIGHT_BROWSERS_PATH=.cache/playwright node video/thumbnail/render.mjs   # needs video/build/footage
+```
